@@ -233,6 +233,9 @@ async function buildBook(){
      
       disableFlipByClick:false
     });
+    // Semua halaman PDF sudah dirender sebelum buku diinisialisasi.
+    // Saat Next/Previous, StPageFlip hanya menganimasikan halaman yang sudah siap;
+    // tidak ada proses render PDF yang menunggu setelah tombol diklik.
     pageFlip.loadFromHTML(pages);
     pageFlip.on('flip',e=>{
       currentPage=e.data+1;
