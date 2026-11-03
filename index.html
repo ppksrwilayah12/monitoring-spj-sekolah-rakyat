@@ -50,24 +50,31 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
   box-shadow:0 3px 8px rgba(7,87,201,.2)
 }
 #toolbar{
-  position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:20;
-  display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;
-  background:rgba(13,35,63,.92);border:1px solid #ffffff35;
-  backdrop-filter:blur(8px);color:#fff;line-height:1;box-shadow:0 8px 28px #0005
+  position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;
+  display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 13px;
+  border-radius:999px;background:rgba(235,243,255,.13);
+  border:1px solid rgba(255,255,255,.28);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  backdrop-filter:blur(24px) saturate(180%);
+  color:#fff;line-height:1;box-shadow:0 8px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.16)
 }
-#toolbar button{border:0;border-radius:8px;background:transparent;color:#fff;padding:7px 9px;font-size:18px;cursor:pointer}
-#toolbar button:hover{background:#ffffff25}
-#toolbar button:disabled{opacity:.35;cursor:not-allowed}
-#pageNum{width:44px;padding:6px 4px;text-align:center;border:1px solid #ffffff55;border-radius:5px;background:#ffffff20;color:#fff}
-#pageStatus{font-size:12px;white-space:nowrap}
+#toolbar button{border:0;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;
+  width:34px;height:34px;padding:0;font-size:19px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center}
+#toolbar button:hover{background:rgba(255,255,255,.22)}
+#toolbar button:disabled{opacity:.3;cursor:not-allowed}
+#pageNum{width:42px;padding:6px 3px;text-align:center;border:1px solid rgba(255,255,255,.3);
+  border-radius:999px;background:rgba(255,255,255,.12);color:#fff;outline:none}
+#pageStatus{font-size:12px;white-space:nowrap;text-shadow:0 1px 4px #0008}
 #message{color:#17365d;background:#fff;padding:22px;border-radius:8px;max-width:600px;font:14px/1.5 Arial,sans-serif}
 #loading{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#20242a88;color:#fff;z-index:30;font-size:13px}
 #loading.show{display:flex}
 @media(max-width:700px){
   #viewer{padding:0}
-  #bookShell{width:100vw;height:100vh}
-  #toolbar{max-width:97vw;gap:2px;padding:5px 6px}
-  #toolbar button{padding:5px;font-size:15px}
+  #bookShell{width:100vw;height:100dvh}
+  #toolbar{max-width:calc(100vw - 16px);gap:3px;padding:5px 8px;bottom:max(8px,env(safe-area-inset-bottom))}
+  #toolbar button{width:30px;height:30px;font-size:16px}
+  #pageNum{width:36px;font-size:12px}
   #pageStatus{font-size:10px}
   #flipBook .download-overlay{top:7%;gap:5px}
   #flipBook .download-btn{font-size:8px;padding:6px}
@@ -178,11 +185,13 @@ async function buildBook(){
   loading.classList.add('show');
   try{
     pdfDoc=await pdfjsLib.getDocument({url:PDF_URL}).promise;
-    const viewerW=Math.max(320,viewer.clientWidth-48);
-    const viewerH=Math.max(360,viewer.clientHeight-110);
+    // Gunakan seluruh area layar untuk buku; toolbar mengambang di atas buku.
+    const viewerW=Math.max(320,viewer.clientWidth);
+    const viewerH=Math.max(360,viewer.clientHeight);
     const first=await pdfDoc.getPage(1);
     const base=first.getViewport({scale:1});
     const mobile=isMobile();
+    // Pertahankan proporsi asli PDF sambil memaksimalkan ukuran buku di layar.
     const pageW=Math.floor(Math.min(mobile?viewerW:viewerW/2, (viewerH*base.width/base.height)));
     const pageH=Math.floor(pageW*base.height/base.width);
 
