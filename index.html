@@ -312,63 +312,84 @@ body{
 }
 
 
-/* EFEK MEMBALIK LEMBARAN BUKU: SATU LEMBAR BERPUTAR PADA POROS TULANG BUKU */
-#bookShell{perspective:2200px;transform-style:preserve-3d;overflow:visible}
-#bookSpread{transform-style:preserve-3d;position:relative}
-.pageFlipSheet{
-  position:absolute;top:0;bottom:0;z-index:8;overflow:hidden;background:#fff;
-  transform-style:preserve-3d;backface-visibility:hidden;will-change:transform;
-  box-shadow:0 4px 18px #0005;
-  pointer-events:none;
-}
-.pageFlipSheet:after{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(90deg,rgba(20,35,55,.22),transparent 18%,transparent 78%,rgba(20,35,55,.12));
-}
-.pageFlipSheet.flip-forward{left:50%;transform-origin:left center;animation:realFlipForward .82s cubic-bezier(.55,.08,.25,1) both}
-.pageFlipSheet.flip-backward{left:0;transform-origin:right center;animation:realFlipBackward .82s cubic-bezier(.55,.08,.25,1) both}
-@keyframes realFlipForward{
-  0%{transform:rotateY(0deg);filter:brightness(1);box-shadow:0 3px 10px #0002}
-  22%{filter:brightness(.94);box-shadow:-8px 8px 22px #0004}
-  48%{transform:rotateY(-92deg);filter:brightness(.78);box-shadow:-18px 10px 28px #0006}
-  78%{filter:brightness(.94);box-shadow:-8px 6px 18px #0003}
-  100%{transform:rotateY(-180deg);filter:brightness(1);box-shadow:0 0 0 transparent}
-}
-@keyframes realFlipBackward{
-  0%{transform:rotateY(0deg);filter:brightness(1);box-shadow:0 3px 10px #0002}
-  22%{filter:brightness(.94);box-shadow:8px 8px 22px #0004}
-  48%{transform:rotateY(92deg);filter:brightness(.78);box-shadow:18px 10px 28px #0006}
-  78%{filter:brightness(.94);box-shadow:8px 6px 18px #0003}
-  100%{transform:rotateY(180deg);filter:brightness(1);box-shadow:0 0 0 transparent}
-}
-@media(prefers-reduced-motion:reduce){.pageFlipSheet{animation-duration:.01ms!important}}
 
-/* TAMPILAN BUKU TERBUKA DUA HALAMAN */
-#viewer{padding:28px 5vw 92px;background:radial-gradient(ellipse at center,#49698f 0%,#263c5b 55%,#17283f 100%)}
-#bookShell{position:relative;display:flex;align-items:stretch;justify-content:center;padding:14px 18px 22px;border-radius:14px;background:linear-gradient(180deg,#19375e,#0b1e36);box-shadow:0 28px 55px #0008,0 5px 12px #0008;max-width: min(94vw,1500px);max-height:calc(100vh - 130px)}
-#bookShell:before{content:"";position:absolute;inset:8px 10px 14px;border-radius:8px;background:linear-gradient(90deg,#d6dce5 0,#fff 2%,#e7edf5 3%,#fff 50%,#dce4ee 97%,#fff 99%);box-shadow:inset 0 0 10px #53657b66;pointer-events:none}
-#bookSpread{position:relative;z-index:1;display:flex;align-items:stretch;max-width:100%;max-height:100%;filter:drop-shadow(0 9px 12px #0005)}
-.pageSlot{position:relative;overflow:hidden;background:#fff;flex:none;box-shadow:inset 0 0 14px #203b5c18}
-.pageSlot.leftPage{border-radius:5px 0 0 5px;box-shadow:inset -13px 0 18px -17px #12233d, inset 0 0 8px #34506a22}
-.pageSlot.rightPage{border-radius:0 5px 5px 0;box-shadow:inset 13px 0 18px -17px #12233d,inset 0 0 8px #34506a22}
-.pageSlot canvas{display:block;width:100%;height:100%}
-#bookSpine{position:absolute;z-index:4;top:0;bottom:0;left:50%;width:22px;transform:translateX(-50%);pointer-events:none;background:linear-gradient(90deg,#172b46aa,#fff6 35%,#273d59aa 70%,transparent);opacity:.45}
-.pageSlot.singlePage{border-radius:5px;box-shadow:0 0 18px #0003}
-#formOverlay{left:5.7%;top:10.5%;width:88.6%;height:84.5%;}
-#downloadOverlay{top:8%}
-#toolbar{background:rgba(13,35,63,.88);border:1px solid #ffffff35;box-shadow:0 8px 28px #0005;padding:9px 14px;gap:9px}
+/* FlipHTML-like page curl powered by StPageFlip */
+#viewer{
+  padding:24px 3vw 88px;
+  background:radial-gradient(ellipse at center,#49698f 0%,#263c5b 58%,#14243a 100%);
+}
+#bookShell{
+  position:relative;
+  width:min(94vw,1500px);
+  height:min(78vh,980px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:visible;
+  filter:drop-shadow(0 24px 28px rgba(0,0,0,.42));
+}
+#flipBook{
+  margin:auto;
+}
+#flipBook .page{
+  background:#fff;
+  overflow:hidden;
+  position:relative;
+  box-shadow:inset 0 0 12px rgba(25,45,70,.10);
+}
+#flipBook .page canvas{
+  display:block;
+  width:100%;
+  height:100%;
+}
+#flipBook .page-content{
+  position:relative;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#fff;
+}
+#flipBook .page-cover{
+  background:linear-gradient(135deg,#17365d,#245b91);
+  color:white;
+}
+#flipBook .page-overlay{
+  position:absolute;
+  z-index:5;
+}
+#flipBook .form-overlay{
+  left:5.7%;top:10.5%;width:88.6%;height:84.5%;
+  border:0;background:transparent;overflow:hidden;
+}
+#flipBook .form-overlay iframe{
+  width:100%;height:100%;border:0;background:transparent;display:block;
+}
+#flipBook .download-overlay{
+  top:8%;left:5%;width:90%;
+  display:flex;justify-content:center;align-items:center;gap:10px;
+  line-height:normal;flex-wrap:wrap;
+}
+#flipBook .download-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:34px;padding:8px 12px;background:#0757c9;color:#fff;
+  text-decoration:none;border-radius:7px;font:700 11px Arial,sans-serif;
+  text-align:center;box-shadow:0 3px 8px rgba(7,87,201,.2);
+}
+#toolbar{
+  background:rgba(13,35,63,.9);border:1px solid #ffffff35;
+  box-shadow:0 8px 28px #0005;padding:9px 14px;gap:9px;
+}
 #toolbar button{border-radius:8px}
 #pageNum{background:#ffffff20}
+#loading{z-index:30}
 @media(max-width:700px){
- #viewer{padding:10px 5px 78px}
- #bookShell{padding:7px 6px 12px;max-width:98vw;max-height:calc(100vh - 100px)}
- #bookShell:before{inset:4px 4px 7px}
- #bookSpine{display:none}
- .pageFlipSheet.flip-forward{left:7px;transform-origin:right center;animation:realFlipBackward .82s cubic-bezier(.55,.08,.25,1) both}
- .pageFlipSheet.flip-backward{left:7px;transform-origin:left center;animation:realFlipForward .82s cubic-bezier(.55,.08,.25,1) both}
- #toolbar{max-width:96vw;gap:2px;padding:5px 6px}
- #toolbar button{padding:5px;font-size:15px}
- #pageStatus{font-size:10px}
+  #viewer{padding:8px 3px 78px}
+  #bookShell{width:98vw;height:78vh}
+  #toolbar{max-width:97vw;gap:2px;padding:5px 6px}
+  #toolbar button{padding:5px;font-size:15px}
+  #pageStatus{font-size:10px}
+  #flipBook .download-overlay{top:7%;gap:5px}
+  #flipBook .download-btn{font-size:8px;padding:6px}
 }
 
 </style>
@@ -376,9 +397,7 @@ body{
 
 <body>
 
-<div id="viewer">
-  <div id="message">E-book sedang dimuat…</div>
-</div>
+<div id="viewer"><div id="message">E-book sedang dimuat…</div></div>
 
 <div id="loading">Membuka halaman…</div>
 
@@ -393,8 +412,10 @@ body{
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
 
 <script>
+
 /* KONFIGURASI FILE */
 const PDF_URL='./Draft_Ebook_Rima_Lea_optimized.pdf';
 const FORM_URL='https://script.google.com/macros/s/AKfycbw9HnoBDY_ta8zLam3T2tK5758b3kGou-kjzuVXFD7Afhle8LrHKdb3dXTPHWgnjqGc/exec';
@@ -405,183 +426,189 @@ const pdfjsLib=window.pdfjsLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let pdfDoc=null;
+let pageFlip=null;
 let currentPage=1;
 let zoom=1;
-let rendering=false;
-let pendingPage=null;
-let hasShownFirstPage=false;
-let renderToken=0;
-const pageCache=new Map();
-const MAX_CACHE_PAGES=6;
+let renderCache=new Map();
+const MAX_CACHE=8;
 
 const viewer=document.getElementById('viewer');
 const pageInput=document.getElementById('pageNum');
 const pageStatus=document.getElementById('pageStatus');
 const loading=document.getElementById('loading');
 const isMobile=()=>window.matchMedia('(max-width:700px)').matches;
-const spreadStep=()=>isMobile()?1:2;
 
-function getSpreadStart(number){
-  const n=Math.max(1,Math.min(pdfDoc.numPages,Number(number)||1));
-  return isMobile()?n:(n%2===0?Math.max(1,n-1):n);
-}
+function cacheKey(n,w){return `${n}-${Math.round(w)}`;}
 
-function getPageScale(page,count){
-  const unit=page.getViewport({scale:1});
-  const availableW=Math.max(240,viewer.clientWidth-40);
-  const availableH=Math.max(280,viewer.clientHeight-40);
-  return Math.min(availableW/(unit.width*count),availableH/unit.height)*zoom;
-}
-
-function cacheKey(pageNo,scale){return pageNo+'@'+scale.toFixed(3);}
-
-async function renderToCache(pageNo,scale){
-  const key=cacheKey(pageNo,scale);
-  if(pageCache.has(key)){
-    const value=pageCache.get(key);
-    pageCache.delete(key); pageCache.set(key,value);
-    return value;
-  }
-  const page=await pdfDoc.getPage(pageNo);
+async function renderPdfPage(n, targetWidth){
+  const key=cacheKey(n,targetWidth);
+  if(renderCache.has(key)) return renderCache.get(key);
+  const page=await pdfDoc.getPage(n);
+  const base=page.getViewport({scale:1});
+  const scale=targetWidth/base.width;
   const viewport=page.getViewport({scale});
-  const ratio=Math.min(window.devicePixelRatio||1,1.75);
+  const ratio=Math.min(window.devicePixelRatio||1,1.5);
   const canvas=document.createElement('canvas');
   canvas.width=Math.ceil(viewport.width*ratio);
   canvas.height=Math.ceil(viewport.height*ratio);
-  canvas.style.width=viewport.width+'px';
-  canvas.style.height=viewport.height+'px';
-  await page.render({canvasContext:canvas.getContext('2d',{alpha:false}),viewport,transform:ratio!==1?[ratio,0,0,ratio,0,0]:null}).promise;
-  const item={canvas,width:viewport.width,height:viewport.height};
-  pageCache.set(key,item);
-  while(pageCache.size>MAX_CACHE_PAGES){
-    const oldest=pageCache.keys().next().value;
-    const removed=pageCache.get(oldest);
-    if(removed?.canvas){removed.canvas.width=0;removed.canvas.height=0;}
-    pageCache.delete(oldest);
+  canvas.style.width='100%';
+  canvas.style.height='100%';
+  await page.render({
+    canvasContext:canvas.getContext('2d',{alpha:false}),
+    viewport,
+    transform:ratio!==1?[ratio,0,0,ratio,0,0]:null
+  }).promise;
+  renderCache.set(key,canvas);
+  while(renderCache.size>MAX_CACHE){
+    const first=renderCache.keys().next().value;
+    const old=renderCache.get(first);
+    old.width=0; old.height=0;
+    renderCache.delete(first);
   }
-  return item;
+  return canvas;
 }
 
-function addPageOverlay(slot,pageNo){
-  if(pageNo===13){
-    const overlay=document.createElement('div');overlay.id='formOverlay';overlay.className='active';
-    const frame=document.createElement('iframe');frame.id='formFrame';frame.src=FORM_URL;frame.title='Formulir Pengumpulan Dokumen SPJ';frame.setAttribute('scrolling','no');
-    overlay.appendChild(frame);slot.appendChild(overlay);
+function addOverlay(pageEl,n){
+  if(n===13){
+    const overlay=document.createElement('div');
+    overlay.className='page-overlay form-overlay';
+    const frame=document.createElement('iframe');
+    frame.src=FORM_URL;
+    frame.title='Formulir Pengumpulan Dokumen SPJ';
+    frame.setAttribute('scrolling','no');
+    overlay.appendChild(frame);
+    pageEl.appendChild(overlay);
   }
-  if(pageNo===18){
-    const overlay=document.createElement('div');overlay.id='downloadOverlay';
-    const a=document.createElement('a');a.href=CHECKLIST_FILE;a.download='Format_Checklist.docx';a.className='download-btn';a.textContent='↓ Download Format Checklist';
-    const b=document.createElement('a');b.href=BUKTI_BERKAS_FILE;b.download='Format_Bukti_Pengumpulan_berkas.docx';b.className='download-btn';b.textContent='↓ Download Format Bukti Pengumpulan Berkas';
-    overlay.append(a,b);slot.appendChild(overlay);
+  if(n===18){
+    const overlay=document.createElement('div');
+    overlay.className='page-overlay download-overlay';
+    const a=document.createElement('a');
+    a.href=CHECKLIST_FILE;a.download='Format_Checklist.docx';
+    a.className='download-btn';a.textContent='↓ Download Format Checklist';
+    const b=document.createElement('a');
+    b.href=BUKTI_BERKAS_FILE;b.download='Format_Bukti_Pengumpulan_berkas.docx';
+    b.className='download-btn';b.textContent='↓ Download Format Bukti Pengumpulan Berkas';
+    overlay.append(a,b);
+    pageEl.appendChild(overlay);
   }
 }
 
-async function drawCachedPage(pageNo,slot,scale){
-  const item=await renderToCache(pageNo,scale);
-  slot.style.width=item.width+'px';slot.style.height=item.height+'px';
-  const visible=document.createElement('canvas');
-  visible.width=item.canvas.width;visible.height=item.canvas.height;
-  visible.style.width=item.width+'px';visible.style.height=item.height+'px';
-  visible.getContext('2d',{alpha:false}).drawImage(item.canvas,0,0);
-  slot.appendChild(visible);
-  addPageOverlay(slot,pageNo);
-}
-
-function preloadSpread(start,scale){
-  if(!pdfDoc)return;
-  const count=isMobile()?1:2;
-  const candidates=[start+count,start+count+1,start-count,start-count+1]
-    .filter(n=>n>=1&&n<=pdfDoc.numPages);
-  const unique=[...new Set(candidates)];
-  /* Preload tidak menghalangi tampilan halaman yang sedang dibuka. */
-  unique.forEach(n=>renderToCache(n,scale).catch(err=>console.warn('Preload halaman '+n,err)));
-}
-
-async function renderPage(number,direction='next'){
-  if(!pdfDoc)return;
-  if(rendering){pendingPage={number,direction};return;}
-  rendering=true;
-  const myToken=++renderToken;
-  const previousSpread=viewer.querySelector('#bookSpread');
-  const oldTurnPage=previousSpread ? previousSpread.querySelector(direction==='prev' ? '.leftPage' : (isMobile()?'.singlePage':'.rightPage')) : null;
-  const turnRect=oldTurnPage ? oldTurnPage.getBoundingClientRect() : null;
-  const turnSnapshot=oldTurnPage ? oldTurnPage.cloneNode(true) : null;
-  const start=getSpreadStart(number);
-  const second=(!isMobile()&&start<pdfDoc.numPages)?start+1:null;
-  currentPage=start;
-  pageInput.value=currentPage;
-  pageInput.max=pdfDoc.numPages;
-
-  /* Overlay hanya muncul pada pemuatan pertama; navigasi berikutnya tidak ditutupi. */
-  if(!hasShownFirstPage)loading.classList.add('show');
-
+async function buildBook(){
+  loading.classList.add('show');
   try{
-    const firstPage=await pdfDoc.getPage(start);
-    const count=second?2:1;
-    const scale=getPageScale(firstPage,count);
-    const shell=document.createElement('div');shell.id='bookShell';
-    const spread=document.createElement('div');spread.id='bookSpread';
-    const left=document.createElement('div');left.className='pageSlot '+(count===1?'singlePage':'leftPage');
-    spread.appendChild(left);
-    const tasks=[drawCachedPage(start,left,scale)];
-    if(second){
-      const right=document.createElement('div');right.className='pageSlot rightPage';spread.appendChild(right);
-      tasks.push(drawCachedPage(second,right,scale));
-      const spine=document.createElement('div');spine.id='bookSpine';spread.appendChild(spine);
-    }
-    await Promise.all(tasks);
-    if(myToken!==renderToken)return;
-    shell.appendChild(spread);
+    pdfDoc=await pdfjsLib.getDocument({url:PDF_URL}).promise;
+    const viewerW=Math.max(320,viewer.clientWidth-30);
+    const viewerH=Math.max(360,viewer.clientHeight-30);
+    const first=await pdfDoc.getPage(1);
+    const base=first.getViewport({scale:1});
+    const mobile=isMobile();
+    const pageW=Math.floor(Math.min(mobile?viewerW:viewerW/2, (viewerH*base.width/base.height)));
+    const pageH=Math.floor(pageW*base.height/base.width);
+
+    const shell=document.createElement('div');
+    shell.id='bookShell';
+    const book=document.createElement('div');
+    book.id='flipBook';
+    shell.appendChild(book);
     viewer.replaceChildren(shell);
-    if(turnSnapshot && hasShownFirstPage){
-      const sheet=document.createElement('div');
-      sheet.className='pageFlipSheet '+(direction==='prev'?'flip-backward':'flip-forward');
-      sheet.style.width=(turnRect?.width||0)+'px';
-      sheet.style.height=(turnRect?.height||0)+'px';
-      sheet.appendChild(turnSnapshot);
-      if(direction==='prev') sheet.style.left='14px';
-      shell.appendChild(sheet);
-      sheet.addEventListener('animationend',()=>sheet.remove(),{once:true});
+
+    const pages=[];
+    for(let n=1;n<=pdfDoc.numPages;n++){
+      const page=document.createElement('div');
+      page.className='page';
+      const content=document.createElement('div');
+      content.className='page-content';
+      const canvas=await renderPdfPage(n,pageW);
+      const visible=document.createElement('canvas');
+      visible.width=canvas.width;visible.height=canvas.height;
+      visible.style.width='100%';visible.style.height='100%';
+      visible.getContext('2d',{alpha:false}).drawImage(canvas,0,0);
+      content.appendChild(visible);
+      addOverlay(content,n);
+      page.appendChild(content);
+      pages.push(page);
     }
-    pageStatus.textContent=second?`${start}–${second} / ${pdfDoc.numPages}`:`${start} / ${pdfDoc.numPages}`;
-    document.getElementById('prev').disabled=start===1;
-    document.getElementById('next').disabled=(second||start)===pdfDoc.numPages;
-    hasShownFirstPage=true;
-    preloadSpread(start,scale);
+
+    pageFlip=new St.PageFlip(book,{
+      width:pageW,
+      height:pageH,
+      size:'stretch',
+      minWidth:260,
+      maxWidth:pageW,
+      minHeight:340,
+      maxHeight:pageH,
+      maxShadowOpacity:0.42,
+      showCover:false,
+      mobileScrollSupport:false,
+      usePortrait:mobile,
+      drawShadow:true,
+      flippingTime:950,
+      startPage:0,
+      autoSize:true,
+      clickEventForward:true,
+      useMouseEvents:true,
+      swipeDistance:30,
+      showPageCorners:true,
+      disableFlipByClick:false
+    });
+    pageFlip.loadFromHTML(pages);
+    pageFlip.on('flip',e=>{
+      currentPage=e.data+1;
+      pageInput.value=currentPage;
+      const total=pdfDoc.numPages;
+      const visible=pageFlip.getOrientation()==='landscape'
+        ? `${currentPage}–${Math.min(currentPage+1,total)}`
+        : `${currentPage}`;
+      pageStatus.textContent=`${visible} / ${total}`;
+      document.getElementById('prev').disabled=currentPage<=1;
+      document.getElementById('next').disabled=currentPage>=total-1;
+    });
+    currentPage=1;
+    pageInput.value=1;
+    pageInput.max=pdfDoc.numPages;
+    pageStatus.textContent=`1–2 / ${pdfDoc.numPages}`;
+    document.getElementById('prev').disabled=true;
+    document.getElementById('next').disabled=false;
   }catch(err){
-    viewer.innerHTML='<div id="message">Halaman tidak dapat ditampilkan. Silakan muat ulang e-book.</div>';
+    viewer.innerHTML='<div id="message"><strong>E-book belum dapat dimuat.</strong><br>Periksa koneksi internet, file PDF, dan library flipbook.</div>';
     console.error(err);
   }finally{
     loading.classList.remove('show');
-    rendering=false;
-    if(pendingPage){const next=pendingPage;pendingPage=null;renderPage(next.number,next.direction);}
   }
 }
 
-async function loadPdf(){
-  try{
-    pdfDoc=await pdfjsLib.getDocument({url:PDF_URL}).promise;
-    pageStatus.textContent='/ '+pdfDoc.numPages;
-    await renderPage(1,'next');
-  }catch(error){
-    viewer.innerHTML='<div id="message"><strong>PDF belum dapat dimuat.</strong><br>Pastikan file PDF berada satu folder dengan index.html.</div>';
-    console.error(error);
-  }
-}
-
-document.getElementById('prev').onclick=()=>renderPage(currentPage-spreadStep(),'prev');
-document.getElementById('next').onclick=()=>renderPage(currentPage+spreadStep(),'next');
-pageInput.onchange=()=>renderPage(Number(pageInput.value)||1,Number(pageInput.value)<currentPage?'prev':'next');
-document.getElementById('zoomIn').onclick=()=>{zoom=Math.min(1.8,zoom+.1);pageCache.clear();renderPage(currentPage,'next');};
-document.getElementById('zoomOut').onclick=()=>{zoom=Math.max(.55,zoom-.1);pageCache.clear();renderPage(currentPage,'next');};
-document.getElementById('fullscreen').onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.();};
+document.getElementById('prev').onclick=()=>pageFlip?.flipPrev();
+document.getElementById('next').onclick=()=>pageFlip?.flipNext();
+pageInput.onchange=()=>{
+  const n=Math.max(1,Math.min(pdfDoc?.numPages||1,Number(pageInput.value)||1));
+  pageFlip?.turnToPage(n-1);
+};
+document.getElementById('zoomIn').onclick=()=>{
+  zoom=Math.min(1.35,zoom+.1);
+  const shell=document.getElementById('bookShell');
+  if(shell) shell.style.transform=`scale(${zoom})`;
+};
+document.getElementById('zoomOut').onclick=()=>{
+  zoom=Math.max(.75,zoom-.1);
+  const shell=document.getElementById('bookShell');
+  if(shell) shell.style.transform=`scale(${zoom})`;
+};
+document.getElementById('fullscreen').onclick=()=>{
+  if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+};
 let resizeTimer;
-window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{if(pdfDoc){pageCache.clear();renderPage(currentPage,'next');}},180);});
-document.addEventListener('keydown',e=>{if(e.target===pageInput)return;if(e.key==='ArrowRight')renderPage(currentPage+spreadStep(),'next');if(e.key==='ArrowLeft')renderPage(currentPage-spreadStep(),'prev');});
-let touchStartX=0;
-viewer.addEventListener('touchstart',e=>{touchStartX=e.changedTouches[0].screenX;},{passive:true});
-viewer.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-touchStartX;if(Math.abs(dx)>65)renderPage(currentPage+(dx<0?spreadStep():-spreadStep()),dx<0?'next':'prev');},{passive:true});
-loadPdf();
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>location.reload(),350);
+});
+document.addEventListener('keydown',e=>{
+  if(e.target===pageInput)return;
+  if(e.key==='ArrowRight')pageFlip?.flipNext();
+  if(e.key==='ArrowLeft')pageFlip?.flipPrev();
+});
+buildBook();
+
 </script>
 
 </body>
