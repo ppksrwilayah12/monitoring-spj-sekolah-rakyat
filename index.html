@@ -311,6 +311,38 @@ body{
   }
 }
 
+
+/* EFEK MEMBALIK LEMBARAN BUKU: SATU LEMBAR BERPUTAR PADA POROS TULANG BUKU */
+#bookShell{perspective:2200px;transform-style:preserve-3d;overflow:visible}
+#bookSpread{transform-style:preserve-3d;position:relative}
+.pageFlipSheet{
+  position:absolute;top:0;bottom:0;z-index:8;overflow:hidden;background:#fff;
+  transform-style:preserve-3d;backface-visibility:hidden;will-change:transform;
+  box-shadow:0 4px 18px #0005;
+  pointer-events:none;
+}
+.pageFlipSheet:after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(20,35,55,.22),transparent 18%,transparent 78%,rgba(20,35,55,.12));
+}
+.pageFlipSheet.flip-forward{left:50%;transform-origin:left center;animation:realFlipForward .82s cubic-bezier(.55,.08,.25,1) both}
+.pageFlipSheet.flip-backward{left:0;transform-origin:right center;animation:realFlipBackward .82s cubic-bezier(.55,.08,.25,1) both}
+@keyframes realFlipForward{
+  0%{transform:rotateY(0deg);filter:brightness(1);box-shadow:0 3px 10px #0002}
+  22%{filter:brightness(.94);box-shadow:-8px 8px 22px #0004}
+  48%{transform:rotateY(-92deg);filter:brightness(.78);box-shadow:-18px 10px 28px #0006}
+  78%{filter:brightness(.94);box-shadow:-8px 6px 18px #0003}
+  100%{transform:rotateY(-180deg);filter:brightness(1);box-shadow:0 0 0 transparent}
+}
+@keyframes realFlipBackward{
+  0%{transform:rotateY(0deg);filter:brightness(1);box-shadow:0 3px 10px #0002}
+  22%{filter:brightness(.94);box-shadow:8px 8px 22px #0004}
+  48%{transform:rotateY(92deg);filter:brightness(.78);box-shadow:18px 10px 28px #0006}
+  78%{filter:brightness(.94);box-shadow:8px 6px 18px #0003}
+  100%{transform:rotateY(180deg);filter:brightness(1);box-shadow:0 0 0 transparent}
+}
+@media(prefers-reduced-motion:reduce){.pageFlipSheet{animation-duration:.01ms!important}}
+
 /* TAMPILAN BUKU TERBUKA DUA HALAMAN */
 #viewer{padding:28px 5vw 92px;background:radial-gradient(ellipse at center,#49698f 0%,#263c5b 55%,#17283f 100%)}
 #bookShell{position:relative;display:flex;align-items:stretch;justify-content:center;padding:14px 18px 22px;border-radius:14px;background:linear-gradient(180deg,#19375e,#0b1e36);box-shadow:0 28px 55px #0008,0 5px 12px #0008;max-width: min(94vw,1500px);max-height:calc(100vh - 130px)}
@@ -332,6 +364,8 @@ body{
  #bookShell{padding:7px 6px 12px;max-width:98vw;max-height:calc(100vh - 100px)}
  #bookShell:before{inset:4px 4px 7px}
  #bookSpine{display:none}
+ .pageFlipSheet.flip-forward{left:7px;transform-origin:right center;animation:realFlipBackward .82s cubic-bezier(.55,.08,.25,1) both}
+ .pageFlipSheet.flip-backward{left:7px;transform-origin:left center;animation:realFlipForward .82s cubic-bezier(.55,.08,.25,1) both}
  #toolbar{max-width:96vw;gap:2px;padding:5px 6px}
  #toolbar button{padding:5px;font-size:15px}
  #pageStatus{font-size:10px}
@@ -468,6 +502,10 @@ async function renderPage(number,direction='next'){
   if(rendering){pendingPage={number,direction};return;}
   rendering=true;
   const myToken=++renderToken;
+  const previousSpread=viewer.querySelector('#bookSpread');
+  const oldTurnPage=previousSpread ? previousSpread.querySelector(direction==='prev' ? '.leftPage' : (isMobile()?'.singlePage':'.rightPage')) : null;
+  const turnRect=oldTurnPage ? oldTurnPage.getBoundingClientRect() : null;
+  const turnSnapshot=oldTurnPage ? oldTurnPage.cloneNode(true) : null;
   const start=getSpreadStart(number);
   const second=(!isMobile()&&start<pdfDoc.numPages)?start+1:null;
   currentPage=start;
@@ -495,12 +533,19 @@ async function renderPage(number,direction='next'){
     if(myToken!==renderToken)return;
     shell.appendChild(spread);
     viewer.replaceChildren(shell);
+    if(turnSnapshot && hasShownFirstPage){
+      const sheet=document.createElement('div');
+      sheet.className='pageFlipSheet '+(direction==='prev'?'flip-backward':'flip-forward');
+      sheet.style.width=(turnRect?.width||0)+'px';
+      sheet.style.height=(turnRect?.height||0)+'px';
+      sheet.appendChild(turnSnapshot);
+      if(direction==='prev') sheet.style.left='14px';
+      shell.appendChild(sheet);
+      sheet.addEventListener('animationend',()=>sheet.remove(),{once:true});
+    }
     pageStatus.textContent=second?`${start}–${second} / ${pdfDoc.numPages}`:`${start} / ${pdfDoc.numPages}`;
     document.getElementById('prev').disabled=start===1;
     document.getElementById('next').disabled=(second||start)===pdfDoc.numPages;
-    if(hasShownFirstPage){
-      spread.style.animation=direction==='prev'?'pageTurnPrev .42s ease both':'pageTurnNext .42s ease both';
-    }
     hasShownFirstPage=true;
     preloadSpread(start,scale);
   }catch(err){
