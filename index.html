@@ -11,15 +11,19 @@
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#17283f}
 #viewer{
-  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  overflow:hidden;padding:22px 3vw 82px;
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;padding:0;
   background:radial-gradient(ellipse at center,#49698f 0%,#263c5b 58%,#14243a 100%);
-  perspective:1800px
+  perspective:1800px;
 }
 #bookShell{
-  position:relative;width:min(95vw,1500px);height:min(80vh,980px);
-  display:flex;align-items:center;justify-content:center;overflow:visible;
-  filter:drop-shadow(0 25px 32px rgba(0,0,0,.45));transform-origin:center center
+  position:relative;
+  width:100vw;height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  overflow:visible;margin:0 auto;
+  filter:drop-shadow(0 25px 32px rgba(0,0,0,.45));
+  transform-origin:center center;
 }
 #flipBook{margin:auto;touch-action:none}
 #flipBook .page{
@@ -60,8 +64,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
 #loading{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#20242a88;color:#fff;z-index:30;font-size:13px}
 #loading.show{display:flex}
 @media(max-width:700px){
-  #viewer{padding:8px 3px 76px}
-  #bookShell{width:98vw;height:78vh}
+  #viewer{padding:0}
+  #bookShell{width:100vw;height:100vh}
   #toolbar{max-width:97vw;gap:2px;padding:5px 6px}
   #toolbar button{padding:5px;font-size:15px}
   #pageStatus{font-size:10px}
@@ -174,8 +178,8 @@ async function buildBook(){
   loading.classList.add('show');
   try{
     pdfDoc=await pdfjsLib.getDocument({url:PDF_URL}).promise;
-    const viewerW=Math.max(320,viewer.clientWidth-30);
-    const viewerH=Math.max(360,viewer.clientHeight-30);
+    const viewerW=Math.max(320,viewer.clientWidth-48);
+    const viewerH=Math.max(360,viewer.clientHeight-110);
     const first=await pdfDoc.getPage(1);
     const base=first.getViewport({scale:1});
     const mobile=isMobile();
