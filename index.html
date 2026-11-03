@@ -27,16 +27,28 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
 }
 #flipBook{margin:auto;touch-action:none}
 #flipBook .page{
-  position:relative;overflow:visible;background:#fff;
+  position:relative;overflow:visible;background:#fdfcf8;
   box-shadow:inset 0 0 18px rgba(25,45,70,.14);
   cursor:grab;user-select:none;-webkit-user-select:none;
   backface-visibility:visible;
   transform-style:preserve-3d;
 }
+#flipBook .page::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(70,62,48,.10),transparent 7%,transparent 93%,rgba(70,62,48,.08)),
+    linear-gradient(180deg,rgba(255,255,255,.30),rgba(238,233,220,.18));
+  backface-visibility:visible;
+}
+#flipBook .page::after{
+  content:"";position:absolute;inset:0;z-index:6;pointer-events:none;
+  background:linear-gradient(90deg,rgba(16,35,57,.14),transparent 9%,transparent 91%,rgba(16,35,57,.10));
+  mix-blend-mode:multiply;
+}
 #flipBook .page:active{cursor:grabbing}
 #flipBook .page-content{
   position:relative;width:100%;height:100%;overflow:hidden;background:#fff;
-  backface-visibility:visible;transform-style:preserve-3d;
+  backface-visibility:visible;transform-style:preserve-3d;z-index:1;
 }
 #flipBook .page canvas{display:block;width:100%;height:100%;pointer-events:none}
 #flipBook .page-overlay{position:absolute;z-index:5}
@@ -231,13 +243,13 @@ async function buildBook(){
       maxWidth:pageW,
       minHeight:340,
       maxHeight:pageH,
-      maxShadowOpacity:0.78,
+      maxShadowOpacity:0.72,
       showCover:false,
       mobileScrollSupport:false,
       // Mengaktifkan kontrol mouse dan sentuhan untuk menarik sudut halaman.
       usePortrait:mobile,
       drawShadow:true,
-      flippingTime:1350,
+      flippingTime:1200,
       startPage:0,
       autoSize:true,
       clickEventForward:true,
@@ -268,8 +280,8 @@ async function buildBook(){
     document.getElementById('prev').disabled=true;
     document.getElementById('next').disabled=false;
   }catch(err){
-    viewer.innerHTML='<div id="message"><strong>E-book belum dapat dimuat.</strong><br>Periksa koneksi internet, file PDF, dan library flipbook.</div>';
-    console.error(err);
+    viewer.innerHTML='<div id="message"><strong>E-book belum dapat dimuat.</strong><br>Periksa koneksi internet, file PDF, dan library flipbook. Muat ulang halaman setelah koneksi stabil.</div>';
+    console.error('Gagal membangun flipbook:',err);
   }finally{
     loading.classList.remove('show');
   }
