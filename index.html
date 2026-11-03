@@ -27,23 +27,41 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
 }
 #flipBook{margin:auto;touch-action:none}
 #flipBook .page{
-  position:relative;overflow:visible;background:#fdfcf8;
+  position:relative;overflow:visible;background:#f8f5ed;
   box-shadow:inset 0 0 18px rgba(25,45,70,.14);
   cursor:grab;user-select:none;-webkit-user-select:none;
-  backface-visibility:visible;
+  transform-style:preserve-3d;-webkit-transform-style:preserve-3d;
+}
+#flipBook .page-face{
+  position:absolute;inset:0;width:100%;height:100%;
+  overflow:hidden;background:#fff;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
   transform-style:preserve-3d;
 }
-#flipBook .page::before{
-  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:
-    linear-gradient(90deg,rgba(70,62,48,.10),transparent 7%,transparent 93%,rgba(70,62,48,.08)),
-    linear-gradient(180deg,rgba(255,255,255,.30),rgba(238,233,220,.18));
-  backface-visibility:visible;
+#flipBook .page-front{transform:rotateY(0deg);z-index:2}
+#flipBook .page-back{
+  transform:rotateY(180deg);z-index:1;
+  background:#fbfaf5;
 }
-#flipBook .page::after{
-  content:"";position:absolute;inset:0;z-index:6;pointer-events:none;
-  background:linear-gradient(90deg,rgba(16,35,57,.14),transparent 9%,transparent 91%,rgba(16,35,57,.10));
-  mix-blend-mode:multiply;
+#flipBook .page-face::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:7;
+  background:linear-gradient(90deg,rgba(65,55,38,.12),transparent 8%,transparent 92%,rgba(65,55,38,.09));
+}
+#flipBook .page:active{cursor:grabbing}
+#flipBook .page-content{position:relative;width:100%;height:100%;overflow:hidden;background:#fff}
+#flipBook .page canvas{display:block;width:100%;height:100%;pointer-events:none}
+#flipBook .page-overlay{position:absolute;z-index:5}
+#flipBook .form-overlay{left:5.7%;top:10.5%;width:88.6%;height:84.5%;border:0;background:transparent;overflow:hidden}
+#flipBook .form-overlay iframe{width:100%;height:100%;border:0;background:transparent;display:block}
+#flipBook .download-overlay{
+  top:8%;left:5%;width:90%;display:flex;justify-content:center;align-items:center;
+  gap:10px;line-height:normal;flex-wrap:wrap
+}
+#flipBook .download-btn{
+  display:inline-flex;align-items:center;justify-content:center;min-height:34px;
+  padding:8px 12px;background:#0757c9;color:#fff;text-decoration:none;
+  border-radius:7px;font:700 11px Arial,sans-serif;text-align:center;
+  box-shadow:0 3px 8px rgba(7,87,201,.2)
 }
 #flipBook .page:active{cursor:grabbing}
 #flipBook .page-content{
@@ -173,6 +191,7 @@ async function renderPdfPage(n, targetWidth){
   return canvas;
 }
 
+
 function addOverlay(pageEl,n){
   if(n===13){
     const overlay=document.createElement('div');
@@ -198,6 +217,26 @@ function addOverlay(pageEl,n){
   }
 }
 
+async function makePdfFace(pageNumber,targetWidth,faceClass){
+  const face=document.createElement('div');
+  face.className=`page-face ${faceClass}`;
+  if(pageNumber<=pdfDoc.numPages){
+    const cached=await renderPdfPage(pageNumber,targetWidth);
+    const content=document.createElement('div');
+    content.className='page-content';
+    const canvas=document.createElement('canvas');
+    canvas.width=cached.width;canvas.height=cached.height;
+    canvas.style.width='100%';canvas.style.height='100%';
+    canvas.getContext('2d',{alpha:false}).drawImage(cached,0,0);
+    content.appendChild(canvas);
+    addOverlay(content,pageNumber);
+    face.appendChild(content);
+  }else{
+    face.style.background='linear-gradient(135deg,#f8f5ed,#fffdf8)';
+  }
+  return face;
+}
+
 async function buildBook(){
   loading.classList.add('show');
   try{
@@ -207,81 +246,65 @@ async function buildBook(){
     const first=await pdfDoc.getPage(1);
     const base=first.getViewport({scale:1});
     const mobile=isMobile();
-    const pageW=Math.floor(Math.min(mobile?viewerW:viewerW/2, (viewerH*base.width/base.height)));
+    const pageW=Math.floor(Math.min(mobile?viewerW:viewerW/2,(viewerH*base.width/base.height)));
     const pageH=Math.floor(pageW*base.height/base.width);
 
     const shell=document.createElement('div');
     shell.id='bookShell';
     const book=document.createElement('div');
     book.id='flipBook';
-    book.setAttribute('aria-label','Tarik sudut halaman untuk membalik lembaran buku');
+    book.setAttribute('aria-label','Buku dua sisi: tarik sudut lembaran untuk membalik halaman');
     shell.appendChild(book);
     viewer.replaceChildren(shell);
 
-    const pages=[];
-    for(let n=1;n<=pdfDoc.numPages;n++){
-      const page=document.createElement('div');
-      page.className='page';
-      const content=document.createElement('div');
-      content.className='page-content';
-      const canvas=await renderPdfPage(n,pageW);
-      const visible=document.createElement('canvas');
-      visible.width=canvas.width;visible.height=canvas.height;
-      visible.style.width='100%';visible.style.height='100%';
-      visible.getContext('2d',{alpha:false}).drawImage(canvas,0,0);
-      content.appendChild(visible);
-      addOverlay(content,n);
-      page.appendChild(content);
-      pages.push(page);
+    // Satu item StPageFlip = satu lembar fisik dengan sisi depan dan belakang.
+    // PDF 1/2 menjadi dua sisi lembar pertama, PDF 3/4 lembar kedua, dst.
+    const sheets=[];
+    const totalSheets=Math.ceil(pdfDoc.numPages/2);
+    for(let sheetIndex=0;sheetIndex<totalSheets;sheetIndex++){
+      const frontPdfPage=sheetIndex*2+1;
+      const backPdfPage=frontPdfPage+1;
+      const sheet=document.createElement('div');
+      sheet.className='page';
+      sheet.style.width=pageW+'px';
+      sheet.style.height=pageH+'px';
+      const front=await makePdfFace(frontPdfPage,pageW,'page-front');
+      const back=await makePdfFace(backPdfPage,pageW,'page-back');
+      sheet.append(front,back);
+      sheets.push(sheet);
     }
 
     pageFlip=new St.PageFlip(book,{
-      width:pageW,
-      height:pageH,
-      size:'stretch',
-      minWidth:260,
-      maxWidth:pageW,
-      minHeight:340,
-      maxHeight:pageH,
-      maxShadowOpacity:0.72,
-      showCover:false,
-      mobileScrollSupport:false,
-      // Mengaktifkan kontrol mouse dan sentuhan untuk menarik sudut halaman.
-      usePortrait:mobile,
-      drawShadow:true,
-      flippingTime:1200,
-      startPage:0,
-      autoSize:true,
-      clickEventForward:true,
-      useMouseEvents:true,
-      swipeDistance:18,
-      showPageCorners:true,
-      // Drag halaman dari sudut kanan/kiri atas atau bawah.
-      // StPageFlip mengelola gerakan pointer dan sentuhan secara native.
-     
-      disableFlipByClick:false
+      width:pageW,height:pageH,size:'stretch',
+      minWidth:260,maxWidth:pageW,minHeight:340,maxHeight:pageH,
+      maxShadowOpacity:0.78,showCover:false,mobileScrollSupport:false,
+      usePortrait:mobile,drawShadow:true,flippingTime:1250,startPage:0,
+      autoSize:true,clickEventForward:true,useMouseEvents:true,
+      swipeDistance:18,showPageCorners:true,disableFlipByClick:false,
+      startZIndex:0
     });
-    pageFlip.loadFromHTML(pages);
+    pageFlip.loadFromHTML(sheets);
     pageFlip.on('flip',e=>{
-      currentPage=e.data+1;
+      const sheetIndex=e.data;
+      const leftPdfPage=sheetIndex*2+2;
+      const rightPdfPage=Math.min(sheetIndex*2+3,pdfDoc.numPages);
+      currentPage=Math.min(leftPdfPage,pdfDoc.numPages);
       pageInput.value=currentPage;
-      const total=pdfDoc.numPages;
-      const visible=pageFlip.getOrientation()==='landscape'
-        ? `${currentPage}–${Math.min(currentPage+1,total)}`
-        : `${currentPage}`;
-      pageStatus.textContent=`${visible} / ${total}`;
-      document.getElementById('prev').disabled=currentPage<=1;
-      document.getElementById('next').disabled=currentPage>=total-1;
+      pageStatus.textContent=pageFlip.getOrientation()==='landscape'
+        ? `${leftPdfPage}–${rightPdfPage} / ${pdfDoc.numPages}`
+        : `${Math.min(sheetIndex*2+1,pdfDoc.numPages)} / ${pdfDoc.numPages}`;
+      document.getElementById('prev').disabled=sheetIndex<=0;
+      document.getElementById('next').disabled=sheetIndex>=totalSheets-1;
     });
     currentPage=1;
     pageInput.value=1;
     pageInput.max=pdfDoc.numPages;
-    pageStatus.textContent=`1–2 / ${pdfDoc.numPages}`;
+    pageStatus.textContent=`1–${Math.min(2,pdfDoc.numPages)} / ${pdfDoc.numPages}`;
     document.getElementById('prev').disabled=true;
-    document.getElementById('next').disabled=false;
+    document.getElementById('next').disabled=totalSheets<=1;
   }catch(err){
-    viewer.innerHTML='<div id="message"><strong>E-book belum dapat dimuat.</strong><br>Periksa koneksi internet, file PDF, dan library flipbook. Muat ulang halaman setelah koneksi stabil.</div>';
-    console.error('Gagal membangun flipbook:',err);
+    viewer.innerHTML='<div id="message"><strong>E-book belum dapat dimuat.</strong><br>Periksa koneksi internet, file PDF, dan library flipbook.</div>';
+    console.error('Gagal membangun flipbook dua sisi:',err);
   }finally{
     loading.classList.remove('show');
   }
@@ -291,7 +314,8 @@ document.getElementById('prev').onclick=()=>pageFlip?.flipPrev('top');
 document.getElementById('next').onclick=()=>pageFlip?.flipNext('top');
 pageInput.onchange=()=>{
   const n=Math.max(1,Math.min(pdfDoc?.numPages||1,Number(pageInput.value)||1));
-  pageFlip?.turnToPage(n-1);
+  const sheetIndex=Math.floor((n-1)/2);
+  pageFlip?.turnToPage(sheetIndex);
 };
 document.getElementById('zoomIn').onclick=()=>{
   zoom=Math.min(1.35,zoom+.1);
