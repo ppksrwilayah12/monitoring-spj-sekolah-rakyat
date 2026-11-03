@@ -361,46 +361,181 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <script>
+/* KONFIGURASI FILE */
 const PDF_URL='./Draft_Ebook_Rima_Lea_optimized.pdf';
 const FORM_URL='https://script.google.com/macros/s/AKfycbw9HnoBDY_ta8zLam3T2tK5758b3kGou-kjzuVXFD7Afhle8LrHKdb3dXTPHWgnjqGc/exec';
 const CHECKLIST_FILE='./Format_Checklist.docx';
 const BUKTI_BERKAS_FILE='./Format_Bukti_Pengumpulan_berkas.docx';
+
 const pdfjsLib=window.pdfjsLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-let pdfDoc=null,currentPage=1,zoom=1,rendering=false,pendingPage=null,hasShownFirstPage=false;
-const viewer=document.getElementById('viewer'),pageInput=document.getElementById('pageNum'),pageStatus=document.getElementById('pageStatus'),loading=document.getElementById('loading');
+
+let pdfDoc=null;
+let currentPage=1;
+let zoom=1;
+let rendering=false;
+let pendingPage=null;
+let hasShownFirstPage=false;
+let renderToken=0;
+const pageCache=new Map();
+const MAX_CACHE_PAGES=6;
+
+const viewer=document.getElementById('viewer');
+const pageInput=document.getElementById('pageNum');
+const pageStatus=document.getElementById('pageStatus');
+const loading=document.getElementById('loading');
 const isMobile=()=>window.matchMedia('(max-width:700px)').matches;
-function getPageScale(page,count){const unit=page.getViewport({scale:1});const w=Math.max(240,viewer.clientWidth-40),h=Math.max(280,viewer.clientHeight-40);return Math.min(w/(unit.width*count),h/unit.height)*zoom;}
+const spreadStep=()=>isMobile()?1:2;
+
+function getSpreadStart(number){
+  const n=Math.max(1,Math.min(pdfDoc.numPages,Number(number)||1));
+  return isMobile()?n:(n%2===0?Math.max(1,n-1):n);
+}
+
+function getPageScale(page,count){
+  const unit=page.getViewport({scale:1});
+  const availableW=Math.max(240,viewer.clientWidth-40);
+  const availableH=Math.max(280,viewer.clientHeight-40);
+  return Math.min(availableW/(unit.width*count),availableH/unit.height)*zoom;
+}
+
+function cacheKey(pageNo,scale){return pageNo+'@'+scale.toFixed(3);}
+
+async function renderToCache(pageNo,scale){
+  const key=cacheKey(pageNo,scale);
+  if(pageCache.has(key)){
+    const value=pageCache.get(key);
+    pageCache.delete(key); pageCache.set(key,value);
+    return value;
+  }
+  const page=await pdfDoc.getPage(pageNo);
+  const viewport=page.getViewport({scale});
+  const ratio=Math.min(window.devicePixelRatio||1,1.75);
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.ceil(viewport.width*ratio);
+  canvas.height=Math.ceil(viewport.height*ratio);
+  canvas.style.width=viewport.width+'px';
+  canvas.style.height=viewport.height+'px';
+  await page.render({canvasContext:canvas.getContext('2d',{alpha:false}),viewport,transform:ratio!==1?[ratio,0,0,ratio,0,0]:null}).promise;
+  const item={canvas,width:viewport.width,height:viewport.height};
+  pageCache.set(key,item);
+  while(pageCache.size>MAX_CACHE_PAGES){
+    const oldest=pageCache.keys().next().value;
+    const removed=pageCache.get(oldest);
+    if(removed?.canvas){removed.canvas.width=0;removed.canvas.height=0;}
+    pageCache.delete(oldest);
+  }
+  return item;
+}
+
 function addPageOverlay(slot,pageNo){
- if(pageNo===13){const overlay=document.createElement('div');overlay.id='formOverlay';overlay.className='active';const frame=document.createElement('iframe');frame.id='formFrame';frame.src=FORM_URL;frame.title='Formulir Pengumpulan Dokumen SPJ';frame.setAttribute('scrolling','no');overlay.appendChild(frame);slot.appendChild(overlay);}
- if(pageNo===18){const overlay=document.createElement('div');overlay.id='downloadOverlay';const a=document.createElement('a');a.href=CHECKLIST_FILE;a.download='Format_Checklist.docx';a.className='download-btn';a.textContent='↓ Download Format Checklist';const b=document.createElement('a');b.href=BUKTI_BERKAS_FILE;b.download='Format_Bukti_Pengumpulan_berkas.docx';b.className='download-btn';b.textContent='↓ Download Format Bukti Pengumpulan Berkas';overlay.append(a,b);slot.appendChild(overlay);}
+  if(pageNo===13){
+    const overlay=document.createElement('div');overlay.id='formOverlay';overlay.className='active';
+    const frame=document.createElement('iframe');frame.id='formFrame';frame.src=FORM_URL;frame.title='Formulir Pengumpulan Dokumen SPJ';frame.setAttribute('scrolling','no');
+    overlay.appendChild(frame);slot.appendChild(overlay);
+  }
+  if(pageNo===18){
+    const overlay=document.createElement('div');overlay.id='downloadOverlay';
+    const a=document.createElement('a');a.href=CHECKLIST_FILE;a.download='Format_Checklist.docx';a.className='download-btn';a.textContent='↓ Download Format Checklist';
+    const b=document.createElement('a');b.href=BUKTI_BERKAS_FILE;b.download='Format_Bukti_Pengumpulan_berkas.docx';b.className='download-btn';b.textContent='↓ Download Format Bukti Pengumpulan Berkas';
+    overlay.append(a,b);slot.appendChild(overlay);
+  }
 }
-async function drawPage(pageNo,slot,scale){const page=await pdfDoc.getPage(pageNo);const vp=page.getViewport({scale});slot.style.width=vp.width+'px';slot.style.height=vp.height+'px';const canvas=document.createElement('canvas');const ratio=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.ceil(vp.width*ratio);canvas.height=Math.ceil(vp.height*ratio);canvas.style.width=vp.width+'px';canvas.style.height=vp.height+'px';slot.appendChild(canvas);await page.render({canvasContext:canvas.getContext('2d'),viewport:vp,transform:ratio!==1?[ratio,0,0,ratio,0,0]:null}).promise;addPageOverlay(slot,pageNo);}
+
+async function drawCachedPage(pageNo,slot,scale){
+  const item=await renderToCache(pageNo,scale);
+  slot.style.width=item.width+'px';slot.style.height=item.height+'px';
+  const visible=document.createElement('canvas');
+  visible.width=item.canvas.width;visible.height=item.canvas.height;
+  visible.style.width=item.width+'px';visible.style.height=item.height+'px';
+  visible.getContext('2d',{alpha:false}).drawImage(item.canvas,0,0);
+  slot.appendChild(visible);
+  addPageOverlay(slot,pageNo);
+}
+
+function preloadSpread(start,scale){
+  if(!pdfDoc)return;
+  const count=isMobile()?1:2;
+  const candidates=[start+count,start+count+1,start-count,start-count+1]
+    .filter(n=>n>=1&&n<=pdfDoc.numPages);
+  const unique=[...new Set(candidates)];
+  /* Preload tidak menghalangi tampilan halaman yang sedang dibuka. */
+  unique.forEach(n=>renderToCache(n,scale).catch(err=>console.warn('Preload halaman '+n,err)));
+}
+
 async function renderPage(number,direction='next'){
- if(!pdfDoc)return;if(rendering){pendingPage={number,direction};return;}rendering=true;loading.classList.add('show');
- try{
- const mobile=isMobile();let first=mobile?Math.max(1,Math.min(pdfDoc.numPages,number)):Math.max(1,Math.min(pdfDoc.numPages,number%2===0?number-1:number));currentPage=first;const second=mobile||first===pdfDoc.numPages?null:first+1;
- const p=await pdfDoc.getPage(first);const count=second?2:1;const scale=getPageScale(p,count);const vp=p.getViewport({scale});
- const shell=document.createElement('div');shell.id='bookShell';const spread=document.createElement('div');spread.id='bookSpread';
- const left=document.createElement('div');left.className='pageSlot '+(count===1?'singlePage':'leftPage');spread.appendChild(left);await drawPage(first,left,scale);
- if(second){const right=document.createElement('div');right.className='pageSlot rightPage';spread.appendChild(right);await drawPage(second,right,scale);const spine=document.createElement('div');spine.id='bookSpine';spread.appendChild(spine);}
- shell.appendChild(spread);viewer.replaceChildren(shell);
- pageInput.value=currentPage;pageInput.max=pdfDoc.numPages;pageStatus.textContent=second?`– ${second} / ${pdfDoc.numPages}`:`/ ${pdfDoc.numPages}`;
- document.getElementById('prev').disabled=currentPage===1;document.getElementById('next').disabled=(second||first)===pdfDoc.numPages;
- if(hasShownFirstPage){spread.style.animation=direction==='prev'?'pageTurnPrev .55s ease both':'pageTurnNext .55s ease both';}hasShownFirstPage=true;
- }catch(err){viewer.innerHTML='<div id="message">Halaman tidak dapat ditampilkan. Silakan muat ulang e-book.</div>';console.error(err);}
- finally{loading.classList.remove('show');rendering=false;if(pendingPage){const q=pendingPage;pendingPage=null;renderPage(q.number,q.direction);}}
+  if(!pdfDoc)return;
+  if(rendering){pendingPage={number,direction};return;}
+  rendering=true;
+  const myToken=++renderToken;
+  const start=getSpreadStart(number);
+  const second=(!isMobile()&&start<pdfDoc.numPages)?start+1:null;
+  currentPage=start;
+  pageInput.value=currentPage;
+  pageInput.max=pdfDoc.numPages;
+
+  /* Overlay hanya muncul pada pemuatan pertama; navigasi berikutnya tidak ditutupi. */
+  if(!hasShownFirstPage)loading.classList.add('show');
+
+  try{
+    const firstPage=await pdfDoc.getPage(start);
+    const count=second?2:1;
+    const scale=getPageScale(firstPage,count);
+    const shell=document.createElement('div');shell.id='bookShell';
+    const spread=document.createElement('div');spread.id='bookSpread';
+    const left=document.createElement('div');left.className='pageSlot '+(count===1?'singlePage':'leftPage');
+    spread.appendChild(left);
+    const tasks=[drawCachedPage(start,left,scale)];
+    if(second){
+      const right=document.createElement('div');right.className='pageSlot rightPage';spread.appendChild(right);
+      tasks.push(drawCachedPage(second,right,scale));
+      const spine=document.createElement('div');spine.id='bookSpine';spread.appendChild(spine);
+    }
+    await Promise.all(tasks);
+    if(myToken!==renderToken)return;
+    shell.appendChild(spread);
+    viewer.replaceChildren(shell);
+    pageStatus.textContent=second?`${start}–${second} / ${pdfDoc.numPages}`:`${start} / ${pdfDoc.numPages}`;
+    document.getElementById('prev').disabled=start===1;
+    document.getElementById('next').disabled=(second||start)===pdfDoc.numPages;
+    if(hasShownFirstPage){
+      spread.style.animation=direction==='prev'?'pageTurnPrev .42s ease both':'pageTurnNext .42s ease both';
+    }
+    hasShownFirstPage=true;
+    preloadSpread(start,scale);
+  }catch(err){
+    viewer.innerHTML='<div id="message">Halaman tidak dapat ditampilkan. Silakan muat ulang e-book.</div>';
+    console.error(err);
+  }finally{
+    loading.classList.remove('show');
+    rendering=false;
+    if(pendingPage){const next=pendingPage;pendingPage=null;renderPage(next.number,next.direction);}
+  }
 }
-async function loadPdf(){try{pdfDoc=await pdfjsLib.getDocument({url:PDF_URL}).promise;await renderPage(1);}catch(e){viewer.innerHTML='<div id="message"><strong>PDF belum dapat dimuat.</strong><br>Pastikan file PDF berada satu folder dengan index.html.</div>';console.error(e);}}
-document.getElementById('prev').onclick=()=>renderPage(currentPage-(isMobile()?1:2),'prev');
-document.getElementById('next').onclick=()=>renderPage(currentPage+(isMobile()?1:2),'next');
+
+async function loadPdf(){
+  try{
+    pdfDoc=await pdfjsLib.getDocument({url:PDF_URL}).promise;
+    pageStatus.textContent='/ '+pdfDoc.numPages;
+    await renderPage(1,'next');
+  }catch(error){
+    viewer.innerHTML='<div id="message"><strong>PDF belum dapat dimuat.</strong><br>Pastikan file PDF berada satu folder dengan index.html.</div>';
+    console.error(error);
+  }
+}
+
+document.getElementById('prev').onclick=()=>renderPage(currentPage-spreadStep(),'prev');
+document.getElementById('next').onclick=()=>renderPage(currentPage+spreadStep(),'next');
 pageInput.onchange=()=>renderPage(Number(pageInput.value)||1,Number(pageInput.value)<currentPage?'prev':'next');
-document.getElementById('zoomIn').onclick=()=>{zoom=Math.min(1.8,zoom+.1);renderPage(currentPage);};
-document.getElementById('zoomOut').onclick=()=>{zoom=Math.max(.55,zoom-.1);renderPage(currentPage);};
+document.getElementById('zoomIn').onclick=()=>{zoom=Math.min(1.8,zoom+.1);pageCache.clear();renderPage(currentPage,'next');};
+document.getElementById('zoomOut').onclick=()=>{zoom=Math.max(.55,zoom-.1);pageCache.clear();renderPage(currentPage,'next');};
 document.getElementById('fullscreen').onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.();};
-window.addEventListener('resize',()=>{if(pdfDoc)renderPage(currentPage);});
-document.addEventListener('keydown',e=>{if(e.target===pageInput)return;if(e.key==='ArrowRight')renderPage(currentPage+(isMobile()?1:2),'next');if(e.key==='ArrowLeft')renderPage(currentPage-(isMobile()?1:2),'prev');});
-let touchStartX=0;viewer.addEventListener('touchstart',e=>{touchStartX=e.changedTouches[0].screenX;},{passive:true});viewer.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-touchStartX;if(Math.abs(dx)>65)renderPage(currentPage+(dx<0?(isMobile()?1:2):-(isMobile()?1:2)),dx<0?'next':'prev');},{passive:true});
+let resizeTimer;
+window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{if(pdfDoc){pageCache.clear();renderPage(currentPage,'next');}},180);});
+document.addEventListener('keydown',e=>{if(e.target===pageInput)return;if(e.key==='ArrowRight')renderPage(currentPage+spreadStep(),'next');if(e.key==='ArrowLeft')renderPage(currentPage-spreadStep(),'prev');});
+let touchStartX=0;
+viewer.addEventListener('touchstart',e=>{touchStartX=e.changedTouches[0].screenX;},{passive:true});
+viewer.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-touchStartX;if(Math.abs(dx)>65)renderPage(currentPage+(dx<0?spreadStep():-spreadStep()),dx<0?'next':'prev');},{passive:true});
 loadPdf();
 </script>
 
