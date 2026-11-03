@@ -21,7 +21,20 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
   display:flex;align-items:center;justify-content:center;overflow:visible;
   filter:drop-shadow(0 25px 32px rgba(0,0,0,.45));transform-origin:center center
 }
-#flipBook{margin:auto;touch-action:none}
+#flipBook{margin:auto;touch-action:none;position:relative;z-index:2}
+#bookUnderlay{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:calc(2 * var(--page-w));height:var(--page-h);
+  display:flex;z-index:1;pointer-events:none;overflow:hidden;
+  box-shadow:0 0 24px rgba(0,0,0,.16)
+}
+#bookUnderlay .underlay-page{
+  width:50%;height:100%;position:relative;overflow:hidden;background:#fff
+}
+#bookUnderlay canvas{display:block;width:100%;height:100%}
+#bookUnderlay .underlay-left{box-shadow:inset -12px 0 18px rgba(20,35,55,.12)}
+#bookUnderlay .underlay-right{box-shadow:inset 12px 0 18px rgba(20,35,55,.12)}
+
 #flipBook .page{
   position:relative;overflow:hidden;background:#fff;
   cursor:grab;user-select:none;-webkit-user-select:none;
@@ -170,6 +183,35 @@ function addOverlay(pageEl,n){
   }
 }
 
+
+let underlayLeft=null;
+let underlayRight=null;
+let pageWidthForBook=0;
+
+function setUnderlayPage(container,pageNumber){
+  if(!container||!pdfDoc||pageNumber<1||pageNumber>pdfDoc.numPages){
+    if(container) container.replaceChildren();
+    return;
+  }
+  const cached=renderCache.get(cacheKey(pageNumber,pageWidthForBook));
+  if(!cached){
+    container.replaceChildren();
+    return;
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=cached.width;
+  canvas.height=cached.height;
+  canvas.getContext('2d',{alpha:false}).drawImage(cached,0,0);
+  container.replaceChildren(canvas);
+}
+
+function updateUnderlay(spreadIndex){
+  // Spread 0 shows PDF pages 1–2. When page 2 lifts, page 3 is already
+  // beneath it; when turning backward, page 2 is already beneath the left leaf.
+  setUnderlayPage(underlayLeft,spreadIndex>0 ? spreadIndex*2 : 0);
+  setUnderlayPage(underlayRight,spreadIndex*2+3);
+}
+
 async function buildBook(){
   loading.classList.add('show');
   try{
@@ -182,8 +224,23 @@ async function buildBook(){
     const pageW=Math.floor(Math.min(mobile?viewerW:viewerW/2, (viewerH*base.width/base.height)));
     const pageH=Math.floor(pageW*base.height/base.width);
 
+    pageWidthForBook=pageW;
     const shell=document.createElement('div');
     shell.id='bookShell';
+    shell.style.setProperty('--page-w',pageW+'px');
+    shell.style.setProperty('--page-h',pageH+'px');
+
+    const underlay=document.createElement('div');
+    underlay.id='bookUnderlay';
+    underlay.style.width=(pageW*2)+'px';
+    underlay.style.height=pageH+'px';
+    underlayLeft=document.createElement('div');
+    underlayLeft.className='underlay-page underlay-left';
+    underlayRight=document.createElement('div');
+    underlayRight.className='underlay-page underlay-right';
+    underlay.append(underlayLeft,underlayRight);
+    shell.appendChild(underlay);
+
     const book=document.createElement('div');
     book.id='flipBook';
     book.setAttribute('aria-label','Tarik sudut halaman untuk membalik lembaran buku');
@@ -206,6 +263,10 @@ async function buildBook(){
       page.appendChild(content);
       pages.push(page);
     }
+
+    // Siapkan halaman di bawah lembar yang akan terangkat SEBELUM flipbook aktif.
+    // Jadi halaman tujuan sudah berada di bawah sejak frame pertama animasi.
+    updateUnderlay(0);
 
     pageFlip=new St.PageFlip(book,{
       width:pageW,
@@ -233,12 +294,17 @@ async function buildBook(){
      
       disableFlipByClick:false
     });
-    // Semua halaman PDF sudah dirender sebelum buku diinisialisasi.
-    // Saat Next/Previous, StPageFlip hanya menganimasikan halaman yang sudah siap;
-    // tidak ada proses render PDF yang menunggu setelah tombol diklik.
     pageFlip.loadFromHTML(pages);
+    updateUnderlay(0);
+    pageFlip.on('changeState',e=>{
+      if(e.data==='flipping'){
+        const index=pageFlip.getCurrentPageIndex();
+        updateUnderlay(index);
+      }
+    });
     pageFlip.on('flip',e=>{
       currentPage=e.data+1;
+      updateUnderlay(e.data);
       pageInput.value=currentPage;
       const total=pdfDoc.numPages;
       const visible=pageFlip.getOrientation()==='landscape'
