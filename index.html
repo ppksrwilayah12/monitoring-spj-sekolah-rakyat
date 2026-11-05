@@ -483,42 +483,39 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
 
 
 
-</style>
-
-<style>
 /* =========================================================
-   BOOK FRAME — VERSI AMAN UNTUK PAGEFLIP
+   BOOK FRAME OVERLAY — LAYER DEPAN
    ========================================================= */
-
 #bookShell{
   position:relative;
   isolation:isolate;
 }
 
-/* Asset hanya sebagai latar visual.
-   Tidak mengubah ukuran internal atau posisi elemen PageFlip. */
-.book-frame-asset{
+/* Mesin flipbook berada di bawah overlay */
+#flipBook{
+  position:relative;
+  z-index:5 !important;
+}
+
+/* Overlay berada di depan:
+   bagian tengah transparan sehingga halaman PDF terlihat di bawahnya */
+.book-frame-overlay{
   position:absolute;
   left:50%;
   top:50%;
-  width:calc(100% + 40px);
-  height:calc(100% + 40px);
+  width:calc(100% + 56px);
+  height:calc(100% + 42px);
   transform:translate(-50%,-50%);
   object-fit:contain;
+  object-position:center;
   pointer-events:none;
   user-select:none;
   -webkit-user-drag:none;
-  z-index:0;
-  filter:drop-shadow(0 18px 26px rgba(0,0,0,.35));
+  z-index:20;
+  filter:drop-shadow(0 22px 28px rgba(0,0,0,.34));
 }
 
-/* Flipbook tetap menggunakan ukuran asli yang dihitung JavaScript */
-#flipBook{
-  position:relative;
-  z-index:2 !important;
-}
-
-/* Hanya dekorasi pseudo-element lama yang disembunyikan */
+/* Hapus dekorasi buku CSS lama agar tidak bertumpuk */
 #flipBook::before,
 #flipBook::after,
 #bookShell::before,
@@ -527,13 +524,12 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
 }
 
 @media (max-width:700px){
-  .book-frame-asset{
+  .book-frame-overlay{
     width:calc(100% + 18px);
     height:calc(100% + 18px);
   }
 }
 </style>
-
 </head>
 
 <body class="ebook-physical-book">
@@ -652,17 +648,18 @@ async function buildBook(){
     shell.id='bookShell';
     /* Asset visual buku */
     const bookFrame=document.createElement('img');
-    bookFrame.src='./assets/book-frame.png';
-    bookFrame.className='book-frame-asset';
+    bookFrame.src='./assets/book-frame-overlay.png';
+    bookFrame.className='book-frame-overlay';
     bookFrame.alt='';
     bookFrame.setAttribute('aria-hidden','true');
-    shell.appendChild(bookFrame);
-
-    /* Mesin flipbook tetap menggunakan struktur lama */
+    /* Mesin flipbook */
     const book=document.createElement('div');
     book.id='flipBook';
     book.setAttribute('aria-label','Tarik sudut halaman untuk membalik lembaran buku');
     shell.appendChild(book);
+
+    /* Overlay buku di lapisan paling depan */
+    shell.appendChild(bookFrame);
 
     viewer.replaceChildren(shell);
 
