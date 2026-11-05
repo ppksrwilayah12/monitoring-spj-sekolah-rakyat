@@ -481,6 +481,57 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
   }
 }
 
+
+
+/* =========================================================
+   INTEGRASI ASSET BOOK FRAME
+   ========================================================= */
+.book-frame-asset{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:calc(100% + 42px);
+  height:calc(100% + 34px);
+  transform:translate(-50%,-50%);
+  object-fit:contain;
+  object-position:center;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  z-index:1;
+  filter:drop-shadow(0 22px 28px rgba(0,0,0,.34));
+}
+
+/* Flipbook selalu berada di atas asset agar PDF dan animasi tidak tertutup */
+#flipBook{
+  z-index:5 !important;
+}
+
+/* Asset menggantikan dekorasi buku buatan CSS lama */
+#flipBook::before,
+#flipBook::after,
+#bookShell::before,
+#bookShell::after{
+  display:none !important;
+}
+
+/* Pada desktop asset mengikuti proporsi buku dua halaman */
+@media (min-width:701px){
+  .book-frame-asset{
+    width:calc(100% + 56px);
+    height:calc(100% + 42px);
+  }
+}
+
+/* Pada mobile asset tetap tersedia sebagai latar visual,
+   tetapi tidak diperbesar berlebihan. */
+@media (max-width:700px){
+  .book-frame-asset{
+    width:calc(100% + 18px);
+    height:calc(100% + 18px);
+  }
+}
+
 </style>
 </head>
 
@@ -598,10 +649,20 @@ async function buildBook(){
 
     const shell=document.createElement('div');
     shell.id='bookShell';
+    /* Asset visual buku */
+    const bookFrame=document.createElement('img');
+    bookFrame.src='./assets/book-frame.png';
+    bookFrame.className='book-frame-asset';
+    bookFrame.alt='';
+    bookFrame.setAttribute('aria-hidden','true');
+    shell.appendChild(bookFrame);
+
+    /* Mesin flipbook tetap menggunakan struktur lama */
     const book=document.createElement('div');
     book.id='flipBook';
     book.setAttribute('aria-label','Tarik sudut halaman untuk membalik lembaran buku');
     shell.appendChild(book);
+
     viewer.replaceChildren(shell);
 
     const pages=[];
