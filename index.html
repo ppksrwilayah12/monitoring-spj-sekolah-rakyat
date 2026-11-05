@@ -28,214 +28,78 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
   transform-origin:center center;
 }
 /* =========================================
-   TAMPILAN FISIK BUKU
-   Punggung + ketebalan lembar + bayangan
+   TAMPILAN BUKU BERBASIS ASSET
+   Base → PDF/Flipbook → Overlay transparan
    ========================================= */
 
+#bookShell{
+  position:relative !important;
+  width:var(--book-w) !important;
+  height:var(--book-h) !important;
+  flex:none !important;
+  display:block !important;
+  margin:0 auto !important;
+  overflow:visible !important;
+  filter:drop-shadow(0 24px 30px rgba(0,0,0,.42));
+}
+
+/* Asset dasar: ketebalan, sisi buku dan bayangan */
+.book-frame-base{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:fill;
+  z-index:1;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+
+/* Flipbook tetap menggunakan ukuran asli yang dihitung JavaScript */
 #flipBook{
-  position:relative;
-  margin:auto;
+  position:absolute !important;
+  inset:0;
+  width:100% !important;
+  height:100% !important;
+  margin:0 !important;
+  z-index:5 !important;
   touch-action:none;
-  z-index:3;
   isolation:isolate;
   transform-style:preserve-3d;
 }
 
-/* Bayangan besar buku pada permukaan */
-#bookShell::after{
-  content:'';
+/* Overlay transparan: menutup tepi dan punggung buku */
+.book-frame-overlay{
   position:absolute;
-  left:50%;
-  bottom:7vh;
-  width:min(72vw,1200px);
-  height:70px;
-  transform:translateX(-50%);
-  border-radius:50%;
-  background:radial-gradient(
-    ellipse at center,
-    rgba(0,0,0,.58) 0%,
-    rgba(0,0,0,.30) 40%,
-    rgba(0,0,0,0) 74%
-  );
-  filter:blur(9px);
-  z-index:0;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:fill;
+  z-index:20;
   pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
 }
 
-/* Ketebalan tumpukan lembar sisi kiri */
-#flipBook::before{
-  content:'';
-  position:absolute;
-  top:7px;
-  bottom:7px;
-  left:-10px;
-  width:13px;
-  border-radius:5px 0 0 5px;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,.90) 0px,
-      rgba(255,255,255,.90) 1px,
-      rgba(190,198,205,.35) 2px,
-      rgba(255,255,255,.78) 3px
-    ),
-    linear-gradient(to right,#d6d9dc,#f8f8f6);
-  box-shadow:
-    -5px 5px 10px rgba(0,0,0,.22),
-    inset -2px 0 2px rgba(0,0,0,.12);
-  z-index:-1;
-  pointer-events:none;
-}
-
-/* Ketebalan tumpukan lembar sisi kanan */
+/* Hapus dekorasi CSS lama agar tidak bertumpuk dengan asset */
+#bookShell::before,
+#bookShell::after,
+#flipBook::before,
 #flipBook::after{
-  content:'';
-  position:absolute;
-  top:7px;
-  bottom:7px;
-  right:-10px;
-  width:13px;
-  border-radius:0 5px 5px 0;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,.90) 0px,
-      rgba(255,255,255,.90) 1px,
-      rgba(190,198,205,.35) 2px,
-      rgba(255,255,255,.78) 3px
-    ),
-    linear-gradient(to left,#d6d9dc,#f8f8f6);
-  box-shadow:
-    5px 5px 10px rgba(0,0,0,.22),
-    inset 2px 0 2px rgba(0,0,0,.12);
-  z-index:-1;
-  pointer-events:none;
+  display:none !important;
 }
 
-/* Punggung buku di tengah saat mode dua halaman */
-#bookShell::before{
-  content:'';
-  position:absolute;
-  top:50%;
-  left:50%;
-  width:18px;
-  height:min(86vh,900px);
-  transform:translate(-50%,-50%);
-  background:
-    linear-gradient(
-      to right,
-      rgba(255,255,255,.16) 0%,
-      rgba(0,0,0,.30) 18%,
-      rgba(0,0,0,.52) 48%,
-      rgba(255,255,255,.14) 52%,
-      rgba(0,0,0,.28) 76%,
-      rgba(255,255,255,.10) 100%
-    );
-  box-shadow:
-    inset 2px 0 5px rgba(0,0,0,.40),
-    inset -2px 0 5px rgba(255,255,255,.18),
-    0 0 12px rgba(0,0,0,.28);
-  border-radius:50%;
-  z-index:1;
-  pointer-events:none;
-  mix-blend-mode:multiply;
-}
-
-/* Halaman memiliki kedalaman dan bayangan lembut */
+/* Konten halaman tetap berada di atas base dan di bawah overlay */
 #flipBook .page{
   position:relative;
-  overflow:hidden;
-  background:#fff;
-  cursor:grab;
-  user-select:none;
-  -webkit-user-select:none;
-  box-shadow:
-    inset 0 0 12px rgba(25,45,70,.10),
-    0 2px 4px rgba(0,0,0,.10);
 }
 
-/* Lengkungan/bayangan di dekat punggung */
-#flipBook .page::before,
-#flipBook .page::after{
-  content:'';
-  position:absolute;
-  top:0;
-  bottom:0;
-  width:7%;
-  z-index:4;
-  pointer-events:none;
+/* Navigasi harus selalu berada paling depan */
+#controls,.controls{
+  z-index:1000 !important;
 }
 
-#flipBook .page::before{
-  left:0;
-  background:linear-gradient(
-    to right,
-    rgba(0,0,0,.18),
-    rgba(0,0,0,.06) 35%,
-    rgba(0,0,0,0)
-  );
-}
-
-#flipBook .page::after{
-  right:0;
-  background:linear-gradient(
-    to left,
-    rgba(0,0,0,.18),
-    rgba(0,0,0,.06) 35%,
-    rgba(0,0,0,0)
-  );
-}
-/* Kedalaman tambahan untuk lembar yang sedang diangkat */
-#flipBook [class*="stf__"]{
-  transform-style:preserve-3d;
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-}
-
-#flipBook .page{
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-}
-
-#flipBook .page:active{cursor:grabbing}
-#flipBook .page-content{
-  position:relative;width:100%;height:100%;overflow:hidden;background:#fff;
-}
-#flipBook .page canvas{display:block;width:100%;height:100%;pointer-events:none}
-#flipBook .page-overlay{position:absolute;z-index:5}
-#flipBook .form-overlay{left:5.7%;top:10.5%;width:88.6%;height:84.5%;border:0;background:transparent;overflow:hidden}
-#flipBook .form-overlay iframe{width:100%;height:100%;border:0;background:transparent;display:block}
-#flipBook .download-overlay{
-  top:8%;left:5%;width:90%;display:flex;justify-content:center;align-items:center;
-  gap:10px;line-height:normal;flex-wrap:wrap
-}
-#flipBook .download-btn{
-  display:inline-flex;align-items:center;justify-content:center;min-height:34px;
-  padding:8px 12px;background:#0757c9;color:#fff;text-decoration:none;
-  border-radius:7px;font:700 11px Arial,sans-serif;text-align:center;
-  box-shadow:0 3px 8px rgba(7,87,201,.2)
-}
-#toolbar{
-  position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;
-  display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 13px;
-  border-radius:999px;background:rgba(235,243,255,.13);
-  border:1px solid rgba(255,255,255,.28);
-  -webkit-backdrop-filter:blur(24px) saturate(180%);
-  backdrop-filter:blur(24px) saturate(180%);
-  color:#fff;line-height:1;box-shadow:0 8px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.16)
-}
-#toolbar button{border:0;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;
-  width:34px;height:34px;padding:0;font-size:19px;cursor:pointer;
-  display:inline-flex;align-items:center;justify-content:center}
-#toolbar button:hover{background:rgba(255,255,255,.22)}
-#toolbar button:disabled{opacity:.3;cursor:not-allowed}
-#pageNum{width:42px;padding:6px 3px;text-align:center;border:1px solid rgba(255,255,255,.3);
-  border-radius:999px;background:rgba(255,255,255,.12);color:#fff;outline:none}
-#pageStatus{font-size:12px;white-space:nowrap;text-shadow:0 1px 4px #0008}
-#message{color:#17365d;background:#fff;padding:22px;border-radius:8px;max-width:600px;font:14px/1.5 Arial,sans-serif}
-#loading{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#20242a88;color:#fff;z-index:30;font-size:13px}
-#loading.show{display:flex}
 @media(max-width:700px){
   #viewer{padding:0}
   #bookShell{width:100vw;height:100dvh}
@@ -670,19 +534,27 @@ async function buildBook(){
     shell.id='bookShell';
     shell.style.setProperty('--book-w', `${bookW}px`);
     shell.style.setProperty('--book-h', `${bookH}px`);
-    /* Asset visual buku */
-    const bookFrame=document.createElement('img');
-    bookFrame.src='./assets/book-frame.png';
-    bookFrame.className='book-frame-asset';
-    bookFrame.alt='';
-    bookFrame.setAttribute('aria-hidden','true');
-    shell.appendChild(bookFrame);
+    /* Layer 1 — dasar buku */
+    const bookBase=document.createElement('img');
+    bookBase.src='./assets/book-frame.png';
+    bookBase.className='book-frame-base';
+    bookBase.alt='';
+    bookBase.setAttribute('aria-hidden','true');
+    shell.appendChild(bookBase);
 
-    /* Mesin flipbook tetap menggunakan struktur lama */
+    /* Layer 2 — mesin flipbook */
     const book=document.createElement('div');
     book.id='flipBook';
     book.setAttribute('aria-label','Tarik sudut halaman untuk membalik lembaran buku');
     shell.appendChild(book);
+
+    /* Layer 3 — frame transparan di atas PDF */
+    const bookOverlay=document.createElement('img');
+    bookOverlay.src='./assets/book-frame-overlay.png';
+    bookOverlay.className='book-frame-overlay';
+    bookOverlay.alt='';
+    bookOverlay.setAttribute('aria-hidden','true');
+    shell.appendChild(bookOverlay);
 
     viewer.replaceChildren(shell);
 
