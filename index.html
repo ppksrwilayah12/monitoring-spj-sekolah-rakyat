@@ -19,6 +19,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
 }
 #bookShell{
   position:relative;
+  perspective:2200px;
+  transform-style:preserve-3d;
   width:100vw;height:100vh;
   display:flex;align-items:center;justify-content:center;
   overflow:visible;margin:0 auto;
@@ -34,8 +36,9 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
   position:relative;
   margin:auto;
   touch-action:none;
-  z-index:2;
+  z-index:3;
   isolation:isolate;
+  transform-style:preserve-3d;
 }
 
 /* Bayangan besar buku pada permukaan */
@@ -133,7 +136,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
     inset -2px 0 5px rgba(255,255,255,.18),
     0 0 12px rgba(0,0,0,.28);
   border-radius:50%;
-  z-index:3;
+  z-index:1;
   pointer-events:none;
   mix-blend-mode:multiply;
 }
@@ -182,6 +185,19 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
     rgba(0,0,0,0)
   );
 }
+/* Kedalaman tambahan untuk lembar yang sedang diangkat */
+#flipBook [class*="stf__"]{
+  transform-style:preserve-3d;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+#flipBook .page{
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
 #flipBook .page:active{cursor:grabbing}
 #flipBook .page-content{
   position:relative;width:100%;height:100%;overflow:hidden;background:#fff;
@@ -394,13 +410,13 @@ async function buildBook(){
       maxWidth:pageW,
       minHeight:340,
       maxHeight:pageH,
-      maxShadowOpacity:0.58,
+      maxShadowOpacity:0.92,
       showCover:false,
       mobileScrollSupport:false,
       // Mengaktifkan kontrol mouse dan sentuhan untuk menarik sudut halaman.
       usePortrait:mobile,
       drawShadow:true,
-      flippingTime:1050,
+      flippingTime:1250,
       startPage:0,
       autoSize:true,
       clickEventForward:true,
@@ -441,8 +457,17 @@ async function buildBook(){
   }
 }
 
-document.getElementById('prev').onclick=()=>pageFlip?.flipPrev();
-document.getElementById('next').onclick=()=>pageFlip?.flipNext();
+// Gunakan sudut bawah agar lembar terlihat benar-benar terangkat,
+// baik saat maju maupun saat kembali ke halaman sebelumnya.
+document.getElementById('prev').onclick=()=>{
+  if(!pageFlip) return;
+  pageFlip.flipPrev('bottom');
+};
+
+document.getElementById('next').onclick=()=>{
+  if(!pageFlip) return;
+  pageFlip.flipNext('bottom');
+};
 pageInput.onchange=()=>{
   const n=Math.max(1,Math.min(pdfDoc?.numPages||1,Number(pageInput.value)||1));
   pageFlip?.turnToPage(n-1);
