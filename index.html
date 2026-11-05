@@ -262,6 +262,225 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
   #flipBook .download-btn{font-size:8px;padding:6px}
 }
 
+
+/* ==========================================================
+   REALISTIC OPEN BOOK SKIN — hardcover, page block & spine
+   ========================================================== */
+
+/* Bingkai buku */
+#bookShell{
+  position:relative !important;
+  perspective:2600px !important;
+  transform-style:preserve-3d !important;
+  filter:drop-shadow(0 22px 20px rgba(0,0,0,.30));
+}
+
+/* Siluet sampul/buku di belakang halaman */
+#bookShell .book-hardcover,
+#bookShell .book-pageblock{
+  pointer-events:none;
+}
+
+/* Sampul belakang / papan buku */
+#bookShell::after{
+  content:'';
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:calc(100% + 28px);
+  height:calc(100% + 24px);
+  transform:translate(-50%,-50%) translateZ(-35px);
+  border-radius:4px;
+  background:
+    linear-gradient(90deg,
+      #1a3659 0%,
+      #2c5479 3%,
+      #183453 7%,
+      #14304d 49%,
+      #0c2238 50%,
+      #14304d 51%,
+      #183453 93%,
+      #2c5479 97%,
+      #1a3659 100%);
+  box-shadow:
+    0 20px 30px rgba(0,0,0,.42),
+    inset 0 1px 1px rgba(255,255,255,.20);
+  z-index:-5 !important;
+}
+
+/* Blok ketebalan halaman kiri */
+#flipBook::before{
+  content:'';
+  position:absolute !important;
+  top:7px;
+  bottom:7px;
+  left:-13px !important;
+  width:15px !important;
+  border-radius:5px 0 0 5px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.98) 0px,
+      rgba(255,255,255,.98) 1px,
+      rgba(170,177,182,.45) 2px,
+      rgba(250,250,248,.96) 3px,
+      rgba(255,255,255,.98) 4px
+    );
+  box-shadow:
+    -5px 3px 7px rgba(0,0,0,.28),
+    inset -3px 0 3px rgba(0,0,0,.16);
+  z-index:-1 !important;
+}
+
+/* Blok ketebalan halaman kanan */
+#flipBook::after{
+  content:'';
+  position:absolute !important;
+  top:7px;
+  bottom:7px;
+  right:-13px !important;
+  width:15px !important;
+  border-radius:0 5px 5px 0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.98) 0px,
+      rgba(255,255,255,.98) 1px,
+      rgba(170,177,182,.45) 2px,
+      rgba(250,250,248,.96) 3px,
+      rgba(255,255,255,.98) 4px
+    );
+  box-shadow:
+    5px 3px 7px rgba(0,0,0,.28),
+    inset 3px 0 3px rgba(0,0,0,.16);
+  z-index:-1 !important;
+}
+
+/* Halaman diberi tepi seperti kertas nyata */
+#flipBook .page{
+  background:#fff !important;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.08),
+    0 3px 6px rgba(0,0,0,.12),
+    inset 0 0 16px rgba(25,45,70,.05) !important;
+  transform-style:preserve-3d !important;
+}
+
+/* Bayangan kuat di area dekat punggung.
+   Dibuat pada halaman, bukan di atas seluruh buku. */
+#flipBook .page::before{
+  content:'';
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:0;
+  width:8%;
+  background:linear-gradient(
+    to right,
+    rgba(0,0,0,.23) 0%,
+    rgba(0,0,0,.11) 28%,
+    rgba(0,0,0,.025) 58%,
+    transparent 100%
+  );
+  z-index:20;
+  pointer-events:none;
+}
+
+#flipBook .page::after{
+  content:'';
+  position:absolute;
+  top:0;
+  bottom:0;
+  right:0;
+  width:8%;
+  background:linear-gradient(
+    to left,
+    rgba(0,0,0,.23) 0%,
+    rgba(0,0,0,.11) 28%,
+    rgba(0,0,0,.025) 58%,
+    transparent 100%
+  );
+  z-index:20;
+  pointer-events:none;
+}
+
+/* Punggung buku — lebih lebar dan terlihat seperti cekungan */
+#bookShell::before{
+  content:'';
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:28px !important;
+  height:calc(100% + 10px) !important;
+  transform:translate(-50%,-50%) translateZ(8px);
+  border-radius:50%;
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(0,0,0,.72) 0%,
+      rgba(0,0,0,.52) 20%,
+      rgba(255,255,255,.12) 44%,
+      rgba(0,0,0,.30) 68%,
+      rgba(255,255,255,.08) 100%
+    );
+  box-shadow:
+    inset 4px 0 7px rgba(0,0,0,.42),
+    inset -4px 0 7px rgba(255,255,255,.22),
+    0 0 8px rgba(0,0,0,.25);
+  z-index:10 !important;
+  pointer-events:none;
+  mix-blend-mode:multiply;
+}
+
+/* Bayangan oval di bawah buku */
+.book-floor-shadow{
+  position:absolute;
+  left:50%;
+  bottom:-42px;
+  width:88%;
+  height:70px;
+  transform:translateX(-50%);
+  border-radius:50%;
+  background:radial-gradient(
+    ellipse,
+    rgba(0,0,0,.46) 0%,
+    rgba(0,0,0,.23) 42%,
+    rgba(0,0,0,0) 74%
+  );
+  filter:blur(10px);
+  z-index:-10;
+  pointer-events:none;
+}
+
+/* Pastikan layer StPageFlip berada di atas dekorasi dan punya 3D */
+#flipBook [class*="stf__"]{
+  transform-style:preserve-3d !important;
+  -webkit-backface-visibility:hidden !important;
+  backface-visibility:hidden !important;
+}
+
+/* Saat mode desktop, buku terlihat sedikit lebih seperti objek fisik */
+@media (min-width:701px){
+  #flipBook{
+    transform:translateZ(0);
+  }
+}
+
+/* Mobile: hilangkan punggung tengah dan sederhanakan hardcover */
+@media (max-width:700px){
+  #bookShell::before{
+    display:none !important;
+  }
+  #bookShell::after{
+    width:calc(100% + 10px);
+    height:calc(100% + 10px);
+  }
+  #flipBook::before,
+  #flipBook::after{
+    width:7px !important;
+  }
+}
+
 </style>
 </head>
 
