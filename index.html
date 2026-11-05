@@ -1,677 +1,757 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>E-book Interaktif – Pedoman Monitoring SPJ</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
+  <title>E-Book Interaktif – Pedoman Monitoring SPJ</title>
 
-:root{--navy:#17365d;--blue:#245b91}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#17283f}
-#viewer{
-  position:fixed;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  overflow:hidden;padding:0;
-  background:radial-gradient(ellipse at center,#49698f 0%,#263c5b 58%,#14243a 100%);
-  perspective:1800px;
-}
-#bookShell{
-  position:relative;
-  perspective:2200px;
-  transform-style:preserve-3d;
-  width:100vw;height:100vh;
-  display:flex;align-items:center;justify-content:center;
-  overflow:visible;margin:0 auto;
-  filter:drop-shadow(0 25px 32px rgba(0,0,0,.45));
-  transform-origin:center center;
-}
-/* =========================================
-   TAMPILAN BUKU BERBASIS ASSET
-   Base → PDF/Flipbook → Overlay transparan
-   ========================================= */
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-#bookShell{
-  position:relative !important;
-  width:var(--book-w) !important;
-  height:var(--book-h) !important;
-  flex:none !important;
-  display:block !important;
-  margin:0 auto !important;
-  overflow:visible !important;
-  filter:drop-shadow(0 24px 30px rgba(0,0,0,.42));
-}
-
-/* Asset dasar: ketebalan, sisi buku dan bayangan */
-.book-frame-base{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:fill;
-  z-index:1;
-  pointer-events:none;
-  user-select:none;
-  -webkit-user-drag:none;
-}
-
-/* Flipbook tetap menggunakan ukuran asli yang dihitung JavaScript */
-#flipBook{
-  position:absolute !important;
-  inset:0;
-  width:100% !important;
-  height:100% !important;
-  margin:0 !important;
-  z-index:5 !important;
-  touch-action:none;
-  isolation:isolate;
-  transform-style:preserve-3d;
-}
-
-/* Overlay transparan: menutup tepi dan punggung buku */
-.book-frame-overlay{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:fill;
-  z-index:20;
-  pointer-events:none;
-  user-select:none;
-  -webkit-user-drag:none;
-}
-
-/* Hapus dekorasi CSS lama agar tidak bertumpuk dengan asset */
-#bookShell::before,
-#bookShell::after,
-#flipBook::before,
-#flipBook::after{
-  display:none !important;
-}
-
-/* Konten halaman tetap berada di atas base dan di bawah overlay */
-#flipBook .page{
-  position:relative;
-}
-
-/* Navigasi harus selalu berada paling depan */
-#controls,.controls{
-  z-index:1000 !important;
-}
-
-@media(max-width:700px){
-  #viewer{padding:0}
-  #bookShell{width:100vw;height:100dvh}
-  /* Mode satu halaman: punggung buku disembunyikan agar tidak menutupi halaman */
-  #bookShell::before{display:none}
-  #bookShell::after{
-    bottom:4vh;
-    width:88vw;
-    height:45px;
-    opacity:.75;
-  }
-  #flipBook::before,#flipBook::after{
-    width:7px;
-    top:4px;
-    bottom:4px;
-  }
-  #flipBook::before{left:-6px}
-  #flipBook::after{right:-6px}
-  #toolbar{max-width:calc(100vw - 16px);gap:3px;padding:5px 8px;bottom:max(8px,env(safe-area-inset-bottom))}
-  #toolbar button{width:30px;height:30px;font-size:16px}
-  #pageNum{width:36px;font-size:12px}
-  #pageStatus{font-size:10px}
-  #flipBook .download-overlay{top:7%;gap:5px}
-  #flipBook .download-btn{font-size:8px;padding:6px}
-}
-
-
-/* ==========================================================
-   REALISTIC OPEN BOOK SKIN — hardcover, page block & spine
-   ========================================================== */
-
-/* Bingkai buku */
-#bookShell{
-  position:relative !important;
-  perspective:2600px !important;
-  transform-style:preserve-3d !important;
-  filter:drop-shadow(0 22px 20px rgba(0,0,0,.30));
-}
-
-/* Siluet sampul/buku di belakang halaman */
-#bookShell .book-hardcover,
-#bookShell .book-pageblock{
-  pointer-events:none;
-}
-
-/* Sampul belakang / papan buku */
-#bookShell::after{
-  content:'';
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:calc(100% + 28px);
-  height:calc(100% + 24px);
-  transform:translate(-50%,-50%) translateZ(-35px);
-  border-radius:4px;
-  background:
-    linear-gradient(90deg,
-      #1a3659 0%,
-      #2c5479 3%,
-      #183453 7%,
-      #14304d 49%,
-      #0c2238 50%,
-      #14304d 51%,
-      #183453 93%,
-      #2c5479 97%,
-      #1a3659 100%);
-  box-shadow:
-    0 20px 30px rgba(0,0,0,.42),
-    inset 0 1px 1px rgba(255,255,255,.20);
-  z-index:-5 !important;
-}
-
-/* Blok ketebalan halaman kiri */
-#flipBook::before{
-  content:'';
-  position:absolute !important;
-  top:7px;
-  bottom:7px;
-  left:-13px !important;
-  width:15px !important;
-  border-radius:5px 0 0 5px;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,.98) 0px,
-      rgba(255,255,255,.98) 1px,
-      rgba(170,177,182,.45) 2px,
-      rgba(250,250,248,.96) 3px,
-      rgba(255,255,255,.98) 4px
-    );
-  box-shadow:
-    -5px 3px 7px rgba(0,0,0,.28),
-    inset -3px 0 3px rgba(0,0,0,.16);
-  z-index:-1 !important;
-}
-
-/* Blok ketebalan halaman kanan */
-#flipBook::after{
-  content:'';
-  position:absolute !important;
-  top:7px;
-  bottom:7px;
-  right:-13px !important;
-  width:15px !important;
-  border-radius:0 5px 5px 0;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,.98) 0px,
-      rgba(255,255,255,.98) 1px,
-      rgba(170,177,182,.45) 2px,
-      rgba(250,250,248,.96) 3px,
-      rgba(255,255,255,.98) 4px
-    );
-  box-shadow:
-    5px 3px 7px rgba(0,0,0,.28),
-    inset 3px 0 3px rgba(0,0,0,.16);
-  z-index:-1 !important;
-}
-
-/* Halaman diberi tepi seperti kertas nyata */
-#flipBook .page{
-  background:#fff !important;
-  box-shadow:
-    0 0 0 1px rgba(0,0,0,.08),
-    0 3px 6px rgba(0,0,0,.12),
-    inset 0 0 16px rgba(25,45,70,.05) !important;
-  transform-style:preserve-3d !important;
-}
-
-/* Bayangan kuat di area dekat punggung.
-   Dibuat pada halaman, bukan di atas seluruh buku. */
-#flipBook .page::before{
-  content:'';
-  position:absolute;
-  top:0;
-  bottom:0;
-  left:0;
-  width:8%;
-  background:linear-gradient(
-    to right,
-    rgba(0,0,0,.23) 0%,
-    rgba(0,0,0,.11) 28%,
-    rgba(0,0,0,.025) 58%,
-    transparent 100%
-  );
-  z-index:20;
-  pointer-events:none;
-}
-
-#flipBook .page::after{
-  content:'';
-  position:absolute;
-  top:0;
-  bottom:0;
-  right:0;
-  width:8%;
-  background:linear-gradient(
-    to left,
-    rgba(0,0,0,.23) 0%,
-    rgba(0,0,0,.11) 28%,
-    rgba(0,0,0,.025) 58%,
-    transparent 100%
-  );
-  z-index:20;
-  pointer-events:none;
-}
-
-/* Punggung buku — lebih lebar dan terlihat seperti cekungan */
-#bookShell::before{
-  content:'';
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:28px !important;
-  height:calc(100% + 10px) !important;
-  transform:translate(-50%,-50%) translateZ(8px);
-  border-radius:50%;
-  background:
-    radial-gradient(
-      ellipse at center,
-      rgba(0,0,0,.72) 0%,
-      rgba(0,0,0,.52) 20%,
-      rgba(255,255,255,.12) 44%,
-      rgba(0,0,0,.30) 68%,
-      rgba(255,255,255,.08) 100%
-    );
-  box-shadow:
-    inset 4px 0 7px rgba(0,0,0,.42),
-    inset -4px 0 7px rgba(255,255,255,.22),
-    0 0 8px rgba(0,0,0,.25);
-  z-index:10 !important;
-  pointer-events:none;
-  mix-blend-mode:multiply;
-}
-
-/* Bayangan oval di bawah buku */
-.book-floor-shadow{
-  position:absolute;
-  left:50%;
-  bottom:-42px;
-  width:88%;
-  height:70px;
-  transform:translateX(-50%);
-  border-radius:50%;
-  background:radial-gradient(
-    ellipse,
-    rgba(0,0,0,.46) 0%,
-    rgba(0,0,0,.23) 42%,
-    rgba(0,0,0,0) 74%
-  );
-  filter:blur(10px);
-  z-index:-10;
-  pointer-events:none;
-}
-
-/* Pastikan layer StPageFlip berada di atas dekorasi dan punya 3D */
-#flipBook [class*="stf__"]{
-  transform-style:preserve-3d !important;
-  -webkit-backface-visibility:hidden !important;
-  backface-visibility:hidden !important;
-}
-
-/* Saat mode desktop, buku terlihat sedikit lebih seperti objek fisik */
-@media (min-width:701px){
-  #flipBook{
-    transform:translateZ(0);
-  }
-}
-
-/* Mobile: hilangkan punggung tengah dan sederhanakan hardcover */
-@media (max-width:700px){
-  #bookShell::before{
-    display:none !important;
-  }
-  #bookShell::after{
-    width:calc(100% + 10px);
-    height:calc(100% + 10px);
-  }
-  #flipBook::before,
-  #flipBook::after{
-    width:7px !important;
-  }
-}
-
-
-
-</style>
-
-<style>
-/* =========================================================
-   BOOK FRAME — DISESUAIKAN DENGAN UKURAN BUKU
-   ========================================================= */
-
-/* Shell sekarang mengikuti ukuran flipbook, bukan seluruh viewport */
-#bookShell{
-  position:relative !important;
-  isolation:isolate;
-  width:var(--book-w) !important;
-  height:var(--book-h) !important;
-  flex:0 0 auto !important;
-  margin:0 !important;
-  overflow:visible !important;
-}
-
-/* Asset berada tepat di belakang halaman dan mengikuti proporsi buku */
-.book-frame-asset{
-  position:absolute !important;
-  left:50% !important;
-  top:50% !important;
-  width:calc(100% + 46px) !important;
-  height:calc(100% + 46px) !important;
-  transform:translate(-50%,-50%) !important;
-  object-fit:fill !important;
-  object-position:center center !important;
-  pointer-events:none !important;
-  user-select:none !important;
-  -webkit-user-drag:none !important;
-  z-index:1 !important;
-  filter:drop-shadow(0 18px 24px rgba(0,0,0,.38));
-}
-
-/* Flipbook berada di atas area putih asset */
-#flipBook{
-  position:absolute !important;
-  left:50% !important;
-  top:50% !important;
-  width:100% !important;
-  height:100% !important;
-  margin:0 !important;
-  transform:translate(-50%,-50%) !important;
-  z-index:2 !important;
-}
-
-/* Hilangkan dekorasi CSS lama agar tidak bentrok dengan PNG asset */
-#flipBook::before,
-#flipBook::after,
-#bookShell::before,
-#bookShell::after{
-  display:none !important;
-}
-
-/* Toolbar selalu di atas buku */
-#toolbar{z-index:50 !important;}
-
-@media (max-width:700px){
-  .book-frame-asset{
-    width:calc(100% + 24px) !important;
-    height:calc(100% + 24px) !important;
-  }
-}
-</style>
-
-</head>
-
-<body class="ebook-physical-book">
-
-<div id="viewer"><div id="message">E-book sedang dimuat…</div></div>
-
-<div id="loading">Membuka halaman…</div>
-
-<div id="toolbar" aria-label="Navigasi e-book">
-  <button id="prev" type="button" title="Halaman sebelumnya">‹</button>
-  <input id="pageNum" type="number" min="1" value="1">
-  <span id="pageStatus">/ 31</span>
-  <button id="next" type="button" title="Halaman berikutnya">›</button>
-  <button id="zoomOut" type="button" title="Perkecil">−</button>
-  <button id="zoomIn" type="button" title="Perbesar">+</button>
-  <button id="fullscreen" type="button" title="Layar penuh">⛶</button>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
-
-<script>
-
-/* KONFIGURASI FILE */
-const PDF_URL='./Draft_Ebook_Rima_Lea_optimized.pdf';
-const FORM_URL='https://script.google.com/macros/s/AKfycbw9HnoBDY_ta8zLam3T2tK5758b3kGou-kjzuVXFD7Afhle8LrHKdb3dXTPHWgnjqGc/exec';
-const CHECKLIST_FILE='./Format_Checklist.docx';
-const BUKTI_BERKAS_FILE='./Format_Bukti_Pengumpulan_berkas.docx';
-
-const pdfjsLib=window.pdfjsLib;
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-let pdfDoc=null;
-let pageFlip=null;
-let currentPage=1;
-let zoom=1;
-let renderCache=new Map();
-const MAX_CACHE=8;
-
-const viewer=document.getElementById('viewer');
-const pageInput=document.getElementById('pageNum');
-const pageStatus=document.getElementById('pageStatus');
-const loading=document.getElementById('loading');
-const isMobile=()=>window.matchMedia('(max-width:700px)').matches;
-
-function cacheKey(n,w){return `${n}-${Math.round(w)}`;}
-
-async function renderPdfPage(n, targetWidth){
-  const key=cacheKey(n,targetWidth);
-  if(renderCache.has(key)) return renderCache.get(key);
-  const page=await pdfDoc.getPage(n);
-  const base=page.getViewport({scale:1});
-  const scale=targetWidth/base.width;
-  const viewport=page.getViewport({scale});
-  const ratio=Math.min(window.devicePixelRatio||1,1.5);
-  const canvas=document.createElement('canvas');
-  canvas.width=Math.ceil(viewport.width*ratio);
-  canvas.height=Math.ceil(viewport.height*ratio);
-  canvas.style.width='100%';
-  canvas.style.height='100%';
-  await page.render({
-    canvasContext:canvas.getContext('2d',{alpha:false}),
-    viewport,
-    transform:ratio!==1?[ratio,0,0,ratio,0,0]:null
-  }).promise;
-  renderCache.set(key,canvas);
-  while(renderCache.size>MAX_CACHE){
-    const first=renderCache.keys().next().value;
-    const old=renderCache.get(first);
-    old.width=0; old.height=0;
-    renderCache.delete(first);
-  }
-  return canvas;
-}
-
-function addOverlay(pageEl,n){
-  if(n===13){
-    const overlay=document.createElement('div');
-    overlay.className='page-overlay form-overlay';
-    const frame=document.createElement('iframe');
-    frame.src=FORM_URL;
-    frame.title='Formulir Pengumpulan Dokumen SPJ';
-    frame.setAttribute('scrolling','no');
-    overlay.appendChild(frame);
-    pageEl.appendChild(overlay);
-  }
-  if(n===18){
-    const overlay=document.createElement('div');
-    overlay.className='page-overlay download-overlay';
-    const a=document.createElement('a');
-    a.href=CHECKLIST_FILE;a.download='Format_Checklist.docx';
-    a.className='download-btn';a.textContent='↓ Download Format Checklist';
-    const b=document.createElement('a');
-    b.href=BUKTI_BERKAS_FILE;b.download='Format_Bukti_Pengumpulan_berkas.docx';
-    b.className='download-btn';b.textContent='↓ Download Format Bukti Pengumpulan Berkas';
-    overlay.append(a,b);
-    pageEl.appendChild(overlay);
-  }
-}
-
-async function buildBook(){
-  loading.classList.add('show');
-  try{
-    pdfDoc=await pdfjsLib.getDocument({url:PDF_URL}).promise;
-    // Gunakan seluruh area layar untuk buku; toolbar mengambang di atas buku.
-    const viewerW=Math.max(320,viewer.clientWidth);
-    const viewerH=Math.max(360,viewer.clientHeight);
-    const first=await pdfDoc.getPage(1);
-    const base=first.getViewport({scale:1});
-    const mobile=isMobile();
-    // Pertahankan proporsi asli PDF sambil memaksimalkan ukuran buku di layar.
-    const pageW=Math.floor(Math.min(mobile?viewerW:viewerW/2, (viewerH*base.width/base.height)));
-    const pageH=Math.floor(pageW*base.height/base.width);
-    // Ukuran shell mengikuti buku yang sebenarnya agar asset frame dan PDF menyatu.
-    const bookW = mobile ? pageW : pageW * 2;
-    const bookH = pageH;
-
-    const shell=document.createElement('div');
-    shell.id='bookShell';
-    shell.style.setProperty('--book-w', `${bookW}px`);
-    shell.style.setProperty('--book-h', `${bookH}px`);
-    /* Layer 1 — dasar buku */
-    const bookBase=document.createElement('img');
-    bookBase.src='./assets/book-frame.png';
-    bookBase.className='book-frame-base';
-    bookBase.alt='';
-    bookBase.setAttribute('aria-hidden','true');
-    shell.appendChild(bookBase);
-
-    /* Layer 2 — mesin flipbook */
-    const book=document.createElement('div');
-    book.id='flipBook';
-    book.setAttribute('aria-label','Tarik sudut halaman untuk membalik lembaran buku');
-    shell.appendChild(book);
-
-    /* Layer 3 — frame transparan di atas PDF */
-    const bookOverlay=document.createElement('img');
-    bookOverlay.src='./assets/book-frame-overlay.png';
-    bookOverlay.className='book-frame-overlay';
-    bookOverlay.alt='';
-    bookOverlay.setAttribute('aria-hidden','true');
-    shell.appendChild(bookOverlay);
-
-    viewer.replaceChildren(shell);
-
-    const pages=[];
-    for(let n=1;n<=pdfDoc.numPages;n++){
-      const page=document.createElement('div');
-      page.className='page';
-      const content=document.createElement('div');
-      content.className='page-content';
-      const canvas=await renderPdfPage(n,pageW);
-      const visible=document.createElement('canvas');
-      visible.width=canvas.width;visible.height=canvas.height;
-      visible.style.width='100%';visible.style.height='100%';
-      visible.getContext('2d',{alpha:false}).drawImage(canvas,0,0);
-      content.appendChild(visible);
-      addOverlay(content,n);
-      page.appendChild(content);
-      pages.push(page);
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    pageFlip=new St.PageFlip(book,{
-      width:pageW,
-      height:pageH,
-      size:'stretch',
-      minWidth:260,
-      maxWidth:pageW,
-      minHeight:340,
-      maxHeight:pageH,
-      maxShadowOpacity:0.92,
-      showCover:false,
-      mobileScrollSupport:false,
-      // Mengaktifkan kontrol mouse dan sentuhan untuk menarik sudut halaman.
-      usePortrait:mobile,
-      drawShadow:true,
-      flippingTime:1250,
-      startPage:0,
-      autoSize:true,
-      clickEventForward:true,
-      useMouseEvents:true,
-      swipeDistance:24,
-      showPageCorners:true,
-      // Drag halaman dari sudut kanan/kiri atas atau bawah.
-      // StPageFlip mengelola gerakan pointer dan sentuhan secara native.
-     
-      disableFlipByClick:false
-    });
-    // Semua halaman PDF sudah dirender sebelum buku diinisialisasi.
-    // Saat Next/Previous, StPageFlip hanya menganimasikan halaman yang sudah siap;
-    // tidak ada proses render PDF yang menunggu setelah tombol diklik.
-    pageFlip.loadFromHTML(pages);
-    pageFlip.on('flip',e=>{
-      currentPage=e.data+1;
-      pageInput.value=currentPage;
-      const total=pdfDoc.numPages;
-      const visible=pageFlip.getOrientation()==='landscape'
-        ? `${currentPage}–${Math.min(currentPage+1,total)}`
-        : `${currentPage}`;
-      pageStatus.textContent=`${visible} / ${total}`;
-      document.getElementById('prev').disabled=currentPage<=1;
-      document.getElementById('next').disabled=currentPage>=total-1;
-    });
-    currentPage=1;
-    pageInput.value=1;
-    pageInput.max=pdfDoc.numPages;
-    pageStatus.textContent=`1–2 / ${pdfDoc.numPages}`;
-    document.getElementById('prev').disabled=true;
-    document.getElementById('next').disabled=false;
-  }catch(err){
-    viewer.innerHTML='<div id="message"><strong>E-book belum dapat dimuat.</strong><br>Periksa koneksi internet, file PDF, dan library flipbook.</div>';
-    console.error(err);
-  }finally{
-    loading.classList.remove('show');
-  }
-}
+    body {
+      min-height: 100vh;
+      background: #142b48;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
 
-// Gunakan sudut bawah agar lembar terlihat benar-benar terangkat,
-// baik saat maju maupun saat kembali ke halaman sebelumnya.
-document.getElementById('prev').onclick=()=>{
-  if(!pageFlip) return;
-  pageFlip.flipPrev('bottom');
-};
+    /* =========================
+       HALAMAN UTAMA
+    ========================= */
 
-document.getElementById('next').onclick=()=>{
-  if(!pageFlip) return;
-  pageFlip.flipNext('bottom');
-};
-pageInput.onchange=()=>{
-  const n=Math.max(1,Math.min(pdfDoc?.numPages||1,Number(pageInput.value)||1));
-  pageFlip?.turnToPage(n-1);
-};
-document.getElementById('zoomIn').onclick=()=>{
-  zoom=Math.min(1.35,zoom+.1);
-  const shell=document.getElementById('bookShell');
-  if(shell) shell.style.transform=`scale(${zoom})`;
-};
-document.getElementById('zoomOut').onclick=()=>{
-  zoom=Math.max(.75,zoom-.1);
-  const shell=document.getElementById('bookShell');
-  if(shell) shell.style.transform=`scale(${zoom})`;
-};
-document.getElementById('fullscreen').onclick=()=>{
-  if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();
-  else document.exitFullscreen?.();
-};
-let resizeTimer;
-window.addEventListener('resize',()=>{
-  clearTimeout(resizeTimer);
-  resizeTimer=setTimeout(()=>location.reload(),350);
-});
-document.addEventListener('keydown',e=>{
-  if(e.target===pageInput)return;
-  if(e.key==='ArrowRight')pageFlip?.flipNext();
-  if(e.key==='ArrowLeft')pageFlip?.flipPrev();
-});
-buildBook();
+    .ebook-app {
+      width: 100%;
+      height: 100vh;
 
-</script>
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+    }
+
+    /* =========================
+       BOOK STAGE
+    ========================= */
+
+    .book-stage {
+      position: relative;
+
+      width: min(96vw, 1500px);
+      aspect-ratio: 1.54 / 1;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* =========================
+       PDF AREA
+    ========================= */
+
+    .pdf-area {
+      position: absolute;
+
+      /*
+        PDF sengaja dibuat lebih kecil
+        agar ketebalan halaman/frame
+        tetap terlihat
+      */
+      left: 5.8%;
+      right: 5.8%;
+      top: 4.8%;
+      bottom: 6.5%;
+
+      overflow: hidden;
+
+      z-index: 1;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spread {
+      width: 100%;
+      height: 100%;
+
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    .page-wrapper {
+      width: 50%;
+      height: 100%;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+
+      max-width: 100%;
+      max-height: 100%;
+
+      width: auto;
+      height: auto;
+    }
+
+    /* =========================
+       FRAME OVERLAY
+    ========================= */
+
+    .book-frame {
+      position: absolute;
+
+      inset: 0;
+
+      width: 100%;
+      height: 100%;
+
+      object-fit: contain;
+
+      z-index: 10;
+
+      pointer-events: none;
+
+      user-select: none;
+    }
+
+    /* =========================
+       SPINE / TENGAH BUKU
+    ========================= */
+
+    .book-spine {
+      position: absolute;
+
+      top: 4.5%;
+      bottom: 5.5%;
+
+      left: 50%;
+
+      width: 30px;
+
+      transform: translateX(-50%);
+
+      z-index: 11;
+
+      pointer-events: none;
+
+      background:
+        linear-gradient(
+          90deg,
+          rgba(0,0,0,0.15),
+          rgba(255,255,255,0.22) 25%,
+          rgba(0,0,0,0.28) 50%,
+          rgba(255,255,255,0.15) 75%,
+          rgba(0,0,0,0.12)
+        );
+
+      filter: blur(1px);
+
+      opacity: 0.85;
+    }
+
+    /* =========================
+       CONTROL BAR
+    ========================= */
+
+    .controls {
+      position: absolute;
+
+      bottom: -52px;
+
+      left: 50%;
+      transform: translateX(-50%);
+
+      z-index: 20;
+
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      padding: 8px 14px;
+
+      border-radius: 30px;
+
+      background: rgba(30, 70, 115, 0.88);
+
+      backdrop-filter: blur(10px);
+
+      box-shadow:
+        0 8px 20px rgba(0,0,0,0.25);
+    }
+
+    .controls button {
+      width: 34px;
+      height: 34px;
+
+      border: none;
+      border-radius: 50%;
+
+      cursor: pointer;
+
+      color: white;
+
+      background: rgba(255,255,255,0.12);
+
+      font-size: 16px;
+
+      transition: 0.2s ease;
+    }
+
+    .controls button:hover {
+      transform: scale(1.08);
+      background: rgba(255,255,255,0.25);
+    }
+
+    .page-info {
+      min-width: 80px;
+
+      text-align: center;
+
+      color: white;
+
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    /* =========================
+       MOBILE
+    ========================= */
+
+    @media (max-width: 768px) {
+
+      body {
+        overflow-y: auto;
+      }
+
+      .ebook-app {
+        justify-content: flex-start;
+        padding-top: 40px;
+      }
+
+      .book-stage {
+        width: 100vw;
+        aspect-ratio: 1.54 / 1;
+      }
+
+      .pdf-area {
+        left: 5.8%;
+        right: 5.8%;
+        top: 5%;
+        bottom: 7%;
+      }
+
+      .book-spine {
+        width: 16px;
+      }
+
+      .controls {
+        bottom: -55px;
+
+        transform: translateX(-50%) scale(0.85);
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <main class="ebook-app">
+
+    <div class="book-stage">
+
+      <!-- =====================
+           PDF / EBOOK
+      ====================== -->
+
+      <div class="pdf-area">
+
+        <div class="spread">
+
+          <div class="page-wrapper">
+            <canvas id="canvas-left"></canvas>
+          </div>
+
+          <div class="page-wrapper">
+            <canvas id="canvas-right"></canvas>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================
+           FRAME BUKU
+      ====================== -->
+
+      <img
+        src="assets/book-frame.png"
+        class="book-frame"
+        alt="Book Frame"
+      />
+
+
+      <!-- =====================
+           SPINE
+      ====================== -->
+
+      <div class="book-spine"></div>
+
+
+      <!-- =====================
+           CONTROLS
+      ====================== -->
+
+      <div class="controls">
+
+        <button id="prevBtn" title="Halaman Sebelumnya">
+          ‹
+        </button>
+
+        <div class="page-info" id="pageInfo">
+          1–2 / ...
+        </div>
+
+        <button id="nextBtn" title="Halaman Berikutnya">
+          ›
+        </button>
+
+        <button id="zoomOut" title="Perkecil">
+          −
+        </button>
+
+        <button id="zoomIn" title="Perbesar">
+          +
+        </button>
+
+        <button id="fullscreenBtn" title="Fullscreen">
+          ⛶
+        </button>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <script>
+
+    /* =========================
+       PDF.JS CONFIG
+    ========================= */
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+
+    /* =========================
+       FILE PDF
+    ========================= */
+
+    const PDF_URL = "Draft_Ebook_Rima_Lea_optimized.pdf";
+
+
+    let pdfDoc = null;
+
+    let currentPage = 1;
+
+    let zoom = 1;
+
+    const leftCanvas =
+      document.getElementById("canvas-left");
+
+    const rightCanvas =
+      document.getElementById("canvas-right");
+
+
+    /* =========================
+       LOAD PDF
+    ========================= */
+
+    async function loadPDF() {
+
+      try {
+
+        pdfDoc =
+          await pdfjsLib.getDocument(PDF_URL).promise;
+
+        renderSpread();
+
+      }
+
+      catch (error) {
+
+        console.error(error);
+
+        alert(
+          "PDF tidak dapat dimuat. Periksa nama dan lokasi file PDF."
+        );
+
+      }
+
+    }
+
+
+    /* =========================
+       RENDER PAGE
+    ========================= */
+
+    async function renderPage(
+      pageNumber,
+      canvas,
+      container
+    ) {
+
+      if (
+        pageNumber < 1 ||
+        pageNumber > pdfDoc.numPages
+      ) {
+
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = 1;
+        canvas.height = 1;
+
+        ctx.clearRect(
+          0,
+          0,
+          1,
+          1
+        );
+
+        return;
+
+      }
+
+
+      const page =
+        await pdfDoc.getPage(pageNumber);
+
+
+      /*
+        Render dengan ukuran dasar
+      */
+
+      const baseViewport =
+        page.getViewport({
+          scale: 1
+        });
+
+
+      /*
+        Ukuran container
+      */
+
+      const containerWidth =
+        container.clientWidth;
+
+      const containerHeight =
+        container.clientHeight;
+
+
+      /*
+        Scale agar PDF masuk area buku
+      */
+
+      const scaleX =
+        containerWidth /
+        baseViewport.width;
+
+      const scaleY =
+        containerHeight /
+        baseViewport.height;
+
+
+      const scale =
+        Math.min(
+          scaleX,
+          scaleY
+        ) * zoom;
+
+
+      const viewport =
+        page.getViewport({
+          scale: scale
+        });
+
+
+      const outputScale =
+        window.devicePixelRatio || 1;
+
+
+      canvas.width =
+        Math.floor(
+          viewport.width * outputScale
+        );
+
+      canvas.height =
+        Math.floor(
+          viewport.height * outputScale
+        );
+
+
+      canvas.style.width =
+        viewport.width + "px";
+
+      canvas.style.height =
+        viewport.height + "px";
+
+
+      const context =
+        canvas.getContext("2d");
+
+
+      context.setTransform(
+        outputScale,
+        0,
+        0,
+        outputScale,
+        0,
+        0
+      );
+
+
+      await page.render({
+
+        canvasContext: context,
+
+        viewport: viewport
+
+      }).promise;
+
+    }
+
+
+    /* =========================
+       RENDER SPREAD
+    ========================= */
+
+    async function renderSpread() {
+
+      if (!pdfDoc) return;
+
+
+      const leftContainer =
+        leftCanvas.parentElement;
+
+      const rightContainer =
+        rightCanvas.parentElement;
+
+
+      await renderPage(
+        currentPage,
+        leftCanvas,
+        leftContainer
+      );
+
+
+      await renderPage(
+        currentPage + 1,
+        rightCanvas,
+        rightContainer
+      );
+
+
+      updatePageInfo();
+
+    }
+
+
+    /* =========================
+       PAGE INFO
+    ========================= */
+
+    function updatePageInfo() {
+
+      const lastPage =
+        Math.min(
+          currentPage + 1,
+          pdfDoc.numPages
+        );
+
+
+      document
+        .getElementById("pageInfo")
+        .textContent =
+          `${currentPage}–${lastPage} / ${pdfDoc.numPages}`;
+
+    }
+
+
+    /* =========================
+       NEXT
+    ========================= */
+
+    document
+      .getElementById("nextBtn")
+      .addEventListener(
+        "click",
+        () => {
+
+          if (
+            currentPage + 2 <=
+            pdfDoc.numPages
+          ) {
+
+            currentPage += 2;
+
+            renderSpread();
+
+          }
+
+        }
+      );
+
+
+    /* =========================
+       PREVIOUS
+    ========================= */
+
+    document
+      .getElementById("prevBtn")
+      .addEventListener(
+        "click",
+        () => {
+
+          if (
+            currentPage - 2 >= 1
+          ) {
+
+            currentPage -= 2;
+
+            renderSpread();
+
+          }
+
+        }
+      );
+
+
+    /* =========================
+       ZOOM IN
+    ========================= */
+
+    document
+      .getElementById("zoomIn")
+      .addEventListener(
+        "click",
+        () => {
+
+          if (zoom < 1.5) {
+
+            zoom += 0.1;
+
+            renderSpread();
+
+          }
+
+        }
+      );
+
+
+    /* =========================
+       ZOOM OUT
+    ========================= */
+
+    document
+      .getElementById("zoomOut")
+      .addEventListener(
+        "click",
+        () => {
+
+          if (zoom > 0.7) {
+
+            zoom -= 0.1;
+
+            renderSpread();
+
+          }
+
+        }
+      );
+
+
+    /* =========================
+       FULLSCREEN
+    ========================= */
+
+    document
+      .getElementById("fullscreenBtn")
+      .addEventListener(
+        "click",
+        () => {
+
+          const stage =
+            document.querySelector(
+              ".book-stage"
+            );
+
+
+          if (!document.fullscreenElement) {
+
+            stage.requestFullscreen();
+
+          }
+
+          else {
+
+            document.exitFullscreen();
+
+          }
+
+        }
+      );
+
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    let resizeTimer;
+
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        clearTimeout(resizeTimer);
+
+
+        resizeTimer =
+          setTimeout(
+            renderSpread,
+            250
+          );
+
+      }
+    );
+
+
+    /* =========================
+       START
+    ========================= */
+
+    loadPDF();
+
+  </script>
 
 </body>
 </html>
