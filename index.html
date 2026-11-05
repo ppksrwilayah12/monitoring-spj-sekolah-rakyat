@@ -381,6 +381,237 @@ body{
     border-radius:5px;
   }
 }
+
+
+/* =========================================================
+   MODE BUKU — DUA HALAMAN UNTUK LAPTOP / DESKTOP
+   ========================================================= */
+.book-shell{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  perspective:2400px;
+  overflow:visible;
+}
+
+.book-spread{
+  position:relative;
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+  transform-style:preserve-3d;
+  filter:drop-shadow(0 20px 24px rgba(0,0,0,.30));
+}
+
+.book-page{
+  position:relative;
+  overflow:hidden;
+  background:#fff;
+  flex:0 0 auto;
+  box-shadow:inset 0 0 16px rgba(0,0,0,.05);
+}
+
+.book-page.left{
+  border-radius:3px 0 0 3px;
+  box-shadow:
+    inset -18px 0 25px rgba(0,0,0,.10),
+    inset 0 0 8px rgba(0,0,0,.04);
+}
+
+.book-page.right{
+  border-radius:0 3px 3px 0;
+  box-shadow:
+    inset 18px 0 25px rgba(0,0,0,.10),
+    inset 0 0 8px rgba(0,0,0,.04);
+}
+
+/* Punggung buku */
+.book-spread::before{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:50%;
+  width:18px;
+  transform:translateX(-50%);
+  background:linear-gradient(90deg,
+    rgba(0,0,0,.20),
+    rgba(255,255,255,.32) 22%,
+    rgba(0,0,0,.14) 52%,
+    rgba(255,255,255,.20) 78%,
+    rgba(0,0,0,.24));
+  z-index:20;
+  pointer-events:none;
+  opacity:.72;
+}
+
+/* Ketebalan lembar */
+.book-spread::after{
+  content:"";
+  position:absolute;
+  left:1.2%;
+  right:1.2%;
+  bottom:-8px;
+  height:12px;
+  border-radius:0 0 5px 5px;
+  background:repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,.95) 0 1px,
+    rgba(185,185,185,.45) 1px 2px
+  );
+  transform:perspective(800px) rotateX(-58deg);
+  transform-origin:top;
+  z-index:-1;
+}
+
+.book-page canvas{
+  display:block;
+  width:100%;
+  height:100%;
+}
+
+/* Lembaran yang sedang dibalik */
+.book-flip-sheet{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:50%;
+  z-index:40;
+  transform-style:preserve-3d;
+  will-change:transform;
+  pointer-events:none;
+}
+
+.book-flip-sheet.next{
+  right:0;
+  transform-origin:left center;
+}
+
+.book-flip-sheet.prev{
+  left:0;
+  transform-origin:right center;
+}
+
+.book-flip-face{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  background:#fff;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  transform-style:preserve-3d;
+}
+
+.book-flip-face.back{
+  transform:rotateY(180deg);
+}
+
+.book-flip-face canvas{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+/* Cahaya dan bayangan lembar */
+.book-flip-sheet::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:5;
+  background:linear-gradient(90deg,
+    rgba(0,0,0,.20),
+    transparent 35%,
+    transparent 65%,
+    rgba(0,0,0,.18));
+  opacity:.55;
+}
+
+.book-flip-sheet.prev::after{
+  background:linear-gradient(90deg,
+    rgba(0,0,0,.18),
+    transparent 35%,
+    transparent 65%,
+    rgba(0,0,0,.20));
+}
+
+.book-flip-sheet.next.running{
+  animation:realBookNext .9s cubic-bezier(.20,.62,.18,1) forwards;
+}
+
+.book-flip-sheet.prev.running{
+  animation:realBookPrev .9s cubic-bezier(.20,.62,.18,1) forwards;
+}
+
+@keyframes realBookNext{
+  0%{
+    transform:rotateY(0deg);
+    filter:brightness(1);
+  }
+  15%{
+    transform:rotateY(-18deg);
+    filter:brightness(.93);
+  }
+  48%{
+    transform:rotateY(-88deg);
+    filter:brightness(.72);
+  }
+  75%{
+    transform:rotateY(-150deg);
+    filter:brightness(.84);
+  }
+  100%{
+    transform:rotateY(-180deg);
+    filter:brightness(1);
+  }
+}
+
+@keyframes realBookPrev{
+  0%{
+    transform:rotateY(0deg);
+    filter:brightness(1);
+  }
+  15%{
+    transform:rotateY(18deg);
+    filter:brightness(.93);
+  }
+  48%{
+    transform:rotateY(88deg);
+    filter:brightness(.72);
+  }
+  75%{
+    transform:rotateY(150deg);
+    filter:brightness(.84);
+  }
+  100%{
+    transform:rotateY(180deg);
+    filter:brightness(1);
+  }
+}
+
+/* Mode satu halaman tetap digunakan di mobile */
+@media (max-width: 760px){
+  .book-shell{
+    perspective:1800px;
+  }
+  .book-spread{
+    filter:drop-shadow(0 10px 18px rgba(0,0,0,.28));
+  }
+  .book-spread::before,
+  .book-spread::after{
+    display:none;
+  }
+  .book-page.left{
+    display:none;
+  }
+  .book-page{
+    box-shadow:0 5px 24px rgba(0,0,0,.30);
+    border-radius:3px;
+  }
+}
 </style>
 </head>
 
@@ -671,6 +902,166 @@ async function renderPage(number,direction='next'){
 }
 
 
+function isDesktopBook(){
+  return window.innerWidth > 760;
+}
+
+async function renderPageToCanvas(number, maxW, maxH){
+  const page=await pdfDoc.getPage(number);
+  const unit=page.getViewport({scale:1});
+  const scale=Math.min(maxW/unit.width,maxH/unit.height)*zoom;
+  const viewport=page.getViewport({scale});
+  const ratio=Math.min(window.devicePixelRatio||1,2);
+
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.ceil(viewport.width*ratio);
+  canvas.height=Math.ceil(viewport.height*ratio);
+  canvas.style.width=viewport.width+'px';
+  canvas.style.height=viewport.height+'px';
+
+  const ctx=canvas.getContext('2d');
+  await page.render({
+    canvasContext:ctx,
+    viewport,
+    transform:ratio!==1?[ratio,0,0,ratio,0,0]:null
+  }).promise;
+
+  return {canvas,width:viewport.width,height:viewport.height};
+}
+
+function makeBookPage(rendered, side){
+  const page=document.createElement('div');
+  page.className='book-page '+side;
+  page.style.width=rendered.width+'px';
+  page.style.height=rendered.height+'px';
+  page.appendChild(rendered.canvas);
+  return page;
+}
+
+async function renderBookSpread(startPage, direction='next'){
+  // startPage adalah halaman kiri pada spread desktop.
+  startPage=Math.max(1,Math.min(pdfDoc.numPages,startPage));
+  if(startPage % 2 === 0) startPage--;
+
+  if(rendering){
+    pendingPage={number:startPage,direction,book:true};
+    return;
+  }
+
+  rendering=true;
+  loading.classList.add('show');
+
+  try{
+    const availableW=Math.max(360,window.innerWidth-28);
+    const availableH=Math.max(320,window.innerHeight-38);
+
+    // Setiap halaman memakai setengah lebar spread.
+    const pageW=availableW/2;
+
+    const leftNum=startPage;
+    const rightNum=Math.min(pdfDoc.numPages,startPage+1);
+
+    // Render halaman tujuan sebelum animasi dimulai.
+    const [leftRender,rightRender]=await Promise.all([
+      renderPageToCanvas(leftNum,pageW,availableH),
+      rightNum!==leftNum ? renderPageToCanvas(rightNum,pageW,availableH) : null
+    ]);
+
+    const shell=document.createElement('div');
+    shell.className='book-shell';
+
+    const spread=document.createElement('div');
+    spread.className='book-spread';
+    spread.style.width=(leftRender.width+(rightRender?rightRender.width:leftRender.width))+'px';
+    spread.style.height=leftRender.height+'px';
+
+    // Jika halaman pertama ganjil: halaman 1 kiri, halaman 2 kanan.
+    spread.appendChild(makeBookPage(leftRender,'left'));
+    if(rightRender){
+      spread.appendChild(makeBookPage(rightRender,'right'));
+    }else{
+      const blank=document.createElement('div');
+      blank.className='book-page right';
+      blank.style.width=leftRender.width+'px';
+      blank.style.height=leftRender.height+'px';
+      spread.appendChild(blank);
+    }
+
+    shell.appendChild(spread);
+
+    const oldShell=viewer.querySelector('.book-shell');
+
+    // Halaman baru sudah lengkap di belakang lembar animasi.
+    viewer.replaceChildren(shell);
+
+    if(oldShell && hasShownFirstPage){
+      const oldSpread=oldShell.querySelector('.book-spread');
+      const oldPages=oldSpread?.querySelectorAll('.book-page');
+
+      if(oldPages?.length>=2){
+        const flip=document.createElement('div');
+        const isPrev=direction==='prev';
+        flip.className='book-flip-sheet '+(isPrev?'prev':'next');
+
+        // Untuk NEXT: lembar kanan lama dibalik ke kiri.
+        // Untuk PREVIOUS: lembar kiri lama dibalik ke kanan.
+        const source=isPrev ? oldPages[0] : oldPages[1];
+        const clone=source.cloneNode(true);
+        clone.className='book-flip-face front';
+
+        // Bagian belakang lembar menggunakan halaman yang sudah tersedia
+        // dari spread baru, sehingga terlihat sejak lembar mulai berputar.
+        const targetPage=isPrev ? spread.querySelector('.book-page.left') : spread.querySelector('.book-page.right');
+        const back=targetPage.cloneNode(true);
+        back.className='book-flip-face back';
+
+        flip.style.width=source.offsetWidth+'px';
+        flip.style.height=source.offsetHeight+'px';
+        flip.append(clone,back);
+        spread.appendChild(flip);
+
+        // Force layout agar halaman tujuan benar-benar tampil sebelum frame animasi.
+        void flip.offsetWidth;
+        flip.classList.add('running');
+
+        await new Promise(resolve=>{
+          flip.addEventListener('animationend',resolve,{once:true});
+          setTimeout(resolve,1050);
+        });
+        flip.remove();
+      }
+    }
+
+    currentPage=startPage;
+    hasShownFirstPage=true;
+    updateControls();
+    preloadAround(startPage);
+
+  }catch(err){
+    console.error(err);
+    viewer.innerHTML='<div id="message">Halaman tidak dapat ditampilkan.</div>';
+  }finally{
+    loading.classList.remove('show');
+    rendering=false;
+
+    if(pendingPage){
+      const next=pendingPage;
+      pendingPage=null;
+      if(next.book) renderBookSpread(next.number,next.direction);
+      else renderPage(next.number,next.direction);
+    }
+  }
+}
+
+async function renderResponsivePage(number,direction='next'){
+  if(isDesktopBook()){
+    const spreadStart=(number % 2 === 0) ? number-1 : number;
+    return renderBookSpread(spreadStart,direction);
+  }
+  return renderPage(number,direction);
+}
+
+
 async function loadPdf(){
 
   try{
@@ -697,11 +1088,11 @@ async function loadPdf(){
 /* NAVIGASI HALAMAN */
 
 document.getElementById('prev').onclick=()=>{
-  renderPage(currentPage-1,'prev');
+  renderResponsivePage(isDesktopBook()?Math.max(1,currentPage-2):currentPage-1,'prev');
 };
 
 document.getElementById('next').onclick=()=>{
-  renderPage(currentPage+1,'next');
+  renderResponsivePage(isDesktopBook()?Math.min(pdfDoc.numPages,currentPage+2):currentPage+1,'next');
 };
 
 pageInput.onchange=()=>{
@@ -757,11 +1148,11 @@ document.addEventListener('keydown',event=>{
   if(event.target===pageInput)return;
 
   if(event.key==='ArrowRight'){
-    renderPage(currentPage+1,'next');
+    renderResponsivePage(isDesktopBook()?Math.min(pdfDoc.numPages,currentPage+2):currentPage+1,'next');
   }
 
   if(event.key==='ArrowLeft'){
-    renderPage(currentPage-1,'prev');
+    renderResponsivePage(isDesktopBook()?Math.max(1,currentPage-2):currentPage-1,'prev');
   }
 });
 
