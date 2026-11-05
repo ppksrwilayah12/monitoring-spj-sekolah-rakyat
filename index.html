@@ -6,86 +6,389 @@
 <title>E-book Interaktif – Pedoman Monitoring SPJ</title>
 
 <style>
+:root{
+  --navy:#17365d;
+  --blue:#245b91;
+}
 
-:root{--navy:#17365d;--blue:#245b91}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#17283f}
+*{
+  box-sizing:border-box;
+}
+
+html,
+body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#20242a;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
 #viewer{
-  position:fixed;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  overflow:hidden;padding:0;
-  background:radial-gradient(ellipse at center,#49698f 0%,#263c5b 58%,#14243a 100%);
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  padding:10px;
   perspective:1800px;
 }
-#bookShell{
+
+#pageStage{
   position:relative;
-  width:100vw;height:100vh;
-  display:flex;align-items:center;justify-content:center;
-  overflow:visible;margin:0 auto;
-  filter:drop-shadow(0 25px 32px rgba(0,0,0,.45));
+  flex:none;
+  transform-style:preserve-3d;
   transform-origin:center center;
 }
-#flipBook{margin:auto;touch-action:none}
-#flipBook .page{
-  position:relative;overflow:hidden;background:#fff;
-  cursor:grab;user-select:none;-webkit-user-select:none;
-  box-shadow:inset 0 0 12px rgba(25,45,70,.10);
-}
-#flipBook .page:active{cursor:grabbing}
-#flipBook .page-content{
-  position:relative;width:100%;height:100%;overflow:hidden;background:#fff;
-}
-#flipBook .page canvas{display:block;width:100%;height:100%;pointer-events:none}
-#flipBook .page-overlay{position:absolute;z-index:5}
-#flipBook .form-overlay{left:5.7%;top:10.5%;width:88.6%;height:84.5%;border:0;background:transparent;overflow:hidden}
-#flipBook .form-overlay iframe{width:100%;height:100%;border:0;background:transparent;display:block}
-#flipBook .download-overlay{
-  top:8%;left:5%;width:90%;display:flex;justify-content:center;align-items:center;
-  gap:10px;line-height:normal;flex-wrap:wrap
-}
-#flipBook .download-btn{
-  display:inline-flex;align-items:center;justify-content:center;min-height:34px;
-  padding:8px 12px;background:#0757c9;color:#fff;text-decoration:none;
-  border-radius:7px;font:700 11px Arial,sans-serif;text-align:center;
-  box-shadow:0 3px 8px rgba(7,87,201,.2)
-}
-#toolbar{
-  position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;
-  display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 13px;
-  border-radius:999px;background:rgba(235,243,255,.13);
-  border:1px solid rgba(255,255,255,.28);
-  -webkit-backdrop-filter:blur(24px) saturate(180%);
-  backdrop-filter:blur(24px) saturate(180%);
-  color:#fff;line-height:1;box-shadow:0 8px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.16)
-}
-#toolbar button{border:0;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;
-  width:34px;height:34px;padding:0;font-size:19px;cursor:pointer;
-  display:inline-flex;align-items:center;justify-content:center}
-#toolbar button:hover{background:rgba(255,255,255,.22)}
-#toolbar button:disabled{opacity:.3;cursor:not-allowed}
-#pageNum{width:42px;padding:6px 3px;text-align:center;border:1px solid rgba(255,255,255,.3);
-  border-radius:999px;background:rgba(255,255,255,.12);color:#fff;outline:none}
-#pageStatus{font-size:12px;white-space:nowrap;text-shadow:0 1px 4px #0008}
-#message{color:#17365d;background:#fff;padding:22px;border-radius:8px;max-width:600px;font:14px/1.5 Arial,sans-serif}
-#loading{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#20242a88;color:#fff;z-index:30;font-size:13px}
-#loading.show{display:flex}
-@media(max-width:700px){
-  #viewer{padding:0}
-  #bookShell{width:100vw;height:100dvh}
-  #toolbar{max-width:calc(100vw - 16px);gap:3px;padding:5px 8px;bottom:max(8px,env(safe-area-inset-bottom))}
-  #toolbar button{width:30px;height:30px;font-size:16px}
-  #pageNum{width:36px;font-size:12px}
-  #pageStatus{font-size:10px}
-  #flipBook .download-overlay{top:7%;gap:5px}
-  #flipBook .download-btn{font-size:8px;padding:6px}
+
+#pageWrap{
+  position:relative;
+  background:#fff;
+  line-height:0;
+  box-shadow:0 5px 24px #0005;
+  overflow:hidden;
+  backface-visibility:hidden;
+  transform-style:preserve-3d;
+  transform-origin:left center;
+  will-change:transform,opacity,filter;
 }
 
+#pdfCanvas{
+  display:block;
+  max-width:none;
+  height:auto;
+}
+
+/* FORM UPLOAD HALAMAN 13 */
+#formOverlay{
+  display:none;
+  position:absolute;
+  left:5.7%;
+  top:10.5%;
+  width:88.6%;
+  height:84.5%;
+  z-index:3;
+  border:0;
+  background:transparent;
+  overflow:hidden;
+}
+
+#formOverlay.active{
+  display:block;
+}
+
+#formFrame{
+  width:100%;
+  height:100%;
+  border:0;
+  background:transparent;
+  display:block;
+  overflow:hidden;
+}
+
+/* TOMBOL DOWNLOAD HALAMAN 18 */
+#downloadOverlay{
+  position:absolute;
+  top:8%;
+  left:50%;
+  transform:translateX(-50%);
+  width:76%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  z-index:4;
+  line-height:normal;
+}
+
+.download-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:38px;
+  padding:10px 16px;
+  background:#0757c9;
+  color:#ffffff;
+  text-decoration:none;
+  border-radius:7px;
+  font-size:12px;
+  font-weight:700;
+  text-align:center;
+  box-shadow:0 3px 8px rgba(7,87,201,.20);
+  transition:all .2s ease;
+}
+
+.download-btn:hover{
+  background:#0649a8;
+  transform:translateY(-2px);
+}
+
+/* TOOLBAR */
+#toolbar{
+  position:fixed;
+  left:50%;
+  bottom:12px;
+  transform:translateX(-50%);
+  z-index:10;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 10px;
+  border-radius:12px;
+  background:rgba(30,38,48,.76);
+  backdrop-filter:blur(8px);
+  color:#fff;
+  line-height:1;
+  box-shadow:0 2px 12px #0003;
+}
+
+#toolbar button{
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  color:#fff;
+  padding:7px 9px;
+  font-size:18px;
+  cursor:pointer;
+}
+
+#toolbar button:hover{
+  background:#ffffff25;
+}
+
+#toolbar button:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+
+#pageNum{
+  width:44px;
+  padding:6px 4px;
+  text-align:center;
+  border:1px solid #ffffff55;
+  border-radius:5px;
+  background:#ffffff20;
+  color:#fff;
+}
+
+#pageStatus{
+  font-size:12px;
+  white-space:nowrap;
+}
+
+#message{
+  color:#17365d;
+  background:white;
+  padding:22px;
+  border-radius:8px;
+  max-width:600px;
+  font:14px/1.5 Arial,sans-serif;
+}
+
+#loading{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:#20242a88;
+  color:#fff;
+  z-index:8;
+  font-size:13px;
+}
+
+#loading.show{
+  display:flex;
+}
+
+/* ANIMASI HALAMAN — halaman tujuan sudah terlihat sejak frame pertama */
+#pageStage{
+  position:relative;
+  flex:none;
+  transform-style:preserve-3d;
+  perspective:1800px;
+}
+
+.page-layer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  transform-style:preserve-3d;
+  transform-origin:center center;
+}
+
+.page-layer.incoming{
+  position:relative;
+  z-index:1;
+}
+
+.page-layer.outgoing{
+  z-index:2;
+  pointer-events:none;
+  transform-origin:left center;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  will-change:transform,filter,opacity;
+}
+
+.page-layer.outgoing.prev{
+  transform-origin:right center;
+}
+
+#pageStage.animating .incoming{
+  box-shadow:0 5px 24px #0005;
+}
+
+#pageStage.animating .outgoing.next{
+  animation:turnSheetNext .72s cubic-bezier(.18,.72,.22,1) both;
+}
+
+#pageStage.animating .outgoing.prev{
+  animation:turnSheetPrev .72s cubic-bezier(.18,.72,.22,1) both;
+}
+
+/* Lembaran lama langsung terangkat, sementara halaman baru sudah tampak di bawah */
+@keyframes turnSheetNext{
+  0%{
+    transform:perspective(1800px) rotateY(0deg);
+    filter:brightness(1);
+    opacity:1;
+  }
+  30%{
+    transform:perspective(1800px) rotateY(-32deg);
+    filter:brightness(.82);
+    opacity:1;
+  }
+  70%{
+    transform:perspective(1800px) rotateY(-108deg);
+    filter:brightness(.64);
+    opacity:.98;
+  }
+  100%{
+    transform:perspective(1800px) rotateY(-180deg);
+    filter:brightness(.55);
+    opacity:0;
+  }
+}
+
+@keyframes turnSheetPrev{
+  0%{
+    transform:perspective(1800px) rotateY(0deg);
+    filter:brightness(1);
+    opacity:1;
+  }
+  30%{
+    transform:perspective(1800px) rotateY(32deg);
+    filter:brightness(.82);
+    opacity:1;
+  }
+  70%{
+    transform:perspective(1800px) rotateY(108deg);
+    filter:brightness(.64);
+    opacity:.98;
+  }
+  100%{
+    transform:perspective(1800px) rotateY(180deg);
+    filter:brightness(.55);
+    opacity:0;
+  }
+}
+
+/* Bayangan lipatan mengikuti lembar yang terangkat */
+.page-layer.outgoing::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(90deg,
+    rgba(0,0,0,.18),
+    rgba(0,0,0,.02) 30%,
+    transparent 55%,
+    rgba(0,0,0,.28));
+  mix-blend-mode:multiply;
+  opacity:.8;
+}
+
+.page-layer.outgoing.prev::after{
+  background:linear-gradient(90deg,
+    rgba(0,0,0,.28),
+    transparent 45%,
+    rgba(0,0,0,.02) 70%,
+    rgba(0,0,0,.18));
+}
+/* ================================
+   RESPONSIVE TOMBOL DOWNLOAD
+   ================================ */
+
+/* LAPTOP / LAYAR MENENGAH */
+@media (min-width: 601px) and (max-width: 1366px){
+
+  #downloadOverlay{
+    width:70%;
+    top:8%;
+    gap:10px;
+  }
+
+  .download-btn{
+    min-height:32px;
+    padding:7px 12px;
+    font-size:10px;
+    border-radius:6px;
+  }
+}
+
+
+/* MOBILE */
+@media(max-width:600px){
+
+  #viewer{
+    padding:2px;
+  }
+
+  #toolbar{
+    bottom:6px;
+    gap:3px;
+    padding:5px 7px;
+  }
+
+  #toolbar button{
+    padding:6px;
+    font-size:16px;
+  }
+
+  #formOverlay{
+    left:3%;
+    width:94%;
+    top:10%;
+    height:85%;
+  }
+
+  /* Tombol download pada halaman checklist */
+  #downloadOverlay{
+    width:88%;
+    top:7.5%;
+    gap:6px;
+  }
+
+  .download-btn{
+    min-height:30px;
+    padding:6px 7px;
+    font-size:8px;
+    line-height:1.2;
+    border-radius:5px;
+  }
+}
 </style>
 </head>
 
 <body>
 
-<div id="viewer"><div id="message">E-book sedang dimuat…</div></div>
+<div id="viewer">
+  <div id="message">E-book sedang dimuat…</div>
+</div>
 
 <div id="loading">Membuka halaman…</div>
 
@@ -100,212 +403,402 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
 
 <script>
 
-/* KONFIGURASI FILE */
+/* FILE EBOOK */
 const PDF_URL='./Draft_Ebook_Rima_Lea_optimized.pdf';
+
+/* FORM UPLOAD SPJ */
 const FORM_URL='https://script.google.com/macros/s/AKfycbw9HnoBDY_ta8zLam3T2tK5758b3kGou-kjzuVXFD7Afhle8LrHKdb3dXTPHWgnjqGc/exec';
+
+/* FILE DOWNLOAD HALAMAN 18 */
 const CHECKLIST_FILE='./Format_Checklist.docx';
 const BUKTI_BERKAS_FILE='./Format_Bukti_Pengumpulan_berkas.docx';
 
 const pdfjsLib=window.pdfjsLib;
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc=
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let pdfDoc=null;
-let pageFlip=null;
 let currentPage=1;
 let zoom=1;
-let renderCache=new Map();
-const MAX_CACHE=8;
+let rendering=false;
+let pendingPage=null;
+let hasShownFirstPage=false;
+const pageCache=new Map();
+const CACHE_LIMIT=6;
 
 const viewer=document.getElementById('viewer');
 const pageInput=document.getElementById('pageNum');
 const pageStatus=document.getElementById('pageStatus');
 const loading=document.getElementById('loading');
-const isMobile=()=>window.matchMedia('(max-width:700px)').matches;
 
-function cacheKey(n,w){return `${n}-${Math.round(w)}`;}
 
-async function renderPdfPage(n, targetWidth){
-  const key=cacheKey(n,targetWidth);
-  if(renderCache.has(key)) return renderCache.get(key);
-  const page=await pdfDoc.getPage(n);
-  const base=page.getViewport({scale:1});
-  const scale=targetWidth/base.width;
+
+function getScale(page){
+  const unit=page.getViewport({scale:1});
+  const availableW=Math.max(240,window.innerWidth-24);
+  const availableH=Math.max(320,window.innerHeight-24);
+  return Math.min(
+    availableW/unit.width,
+    availableH/unit.height
+  )*zoom;
+}
+
+function cacheKey(number){
+  return `${number}@${zoom.toFixed(2)}@${window.innerWidth}x${window.innerHeight}`;
+}
+
+function trimCache(){
+  while(pageCache.size>CACHE_LIMIT){
+    pageCache.delete(pageCache.keys().next().value);
+  }
+}
+
+async function getRenderedPage(number){
+  if(!pdfDoc) throw new Error('PDF belum dimuat');
+
+  const key=cacheKey(number);
+  if(pageCache.has(key)) return pageCache.get(key);
+
+  const page=await pdfDoc.getPage(number);
+  const scale=getScale(page);
   const viewport=page.getViewport({scale});
-  const ratio=Math.min(window.devicePixelRatio||1,1.5);
+  const ratio=Math.min(window.devicePixelRatio||1,2);
+
   const canvas=document.createElement('canvas');
   canvas.width=Math.ceil(viewport.width*ratio);
   canvas.height=Math.ceil(viewport.height*ratio);
-  canvas.style.width='100%';
-  canvas.style.height='100%';
+  canvas.style.width=viewport.width+'px';
+  canvas.style.height=viewport.height+'px';
+
+  const ctx=canvas.getContext('2d');
   await page.render({
-    canvasContext:canvas.getContext('2d',{alpha:false}),
+    canvasContext:ctx,
     viewport,
     transform:ratio!==1?[ratio,0,0,ratio,0,0]:null
   }).promise;
-  renderCache.set(key,canvas);
-  while(renderCache.size>MAX_CACHE){
-    const first=renderCache.keys().next().value;
-    const old=renderCache.get(first);
-    old.width=0; old.height=0;
-    renderCache.delete(first);
-  }
-  return canvas;
+
+  const rendered={
+    width:viewport.width,
+    height:viewport.height,
+    canvas
+  };
+
+  pageCache.set(key,rendered);
+  trimCache();
+  return rendered;
 }
 
-function addOverlay(pageEl,n){
-  if(n===13){
+async function preloadAround(number){
+  const targets=[
+    number-2,number-1,number+1,number+2
+  ].filter(n=>n>=1&&n<=pdfDoc.numPages);
+
+  Promise.all(
+    targets.map(n=>getRenderedPage(n).catch(()=>null))
+  ).catch(()=>{});
+}
+
+function createPageContent(number,rendered){
+  const wrap=document.createElement('div');
+  wrap.className='page-content-wrap';
+  wrap.id='pageWrap';
+  wrap.style.width=rendered.width+'px';
+  wrap.style.height=rendered.height+'px';
+  wrap.style.position='relative';
+  wrap.style.background='#fff';
+  wrap.style.lineHeight='0';
+  wrap.style.boxShadow='0 5px 24px #0005';
+  wrap.style.overflow='hidden';
+
+  const canvas=document.createElement('canvas');
+  canvas.id='pdfCanvas';
+  canvas.width=rendered.canvas.width;
+  canvas.height=rendered.canvas.height;
+  canvas.style.width=rendered.width+'px';
+  canvas.style.height=rendered.height+'px';
+  canvas.getContext('2d').drawImage(rendered.canvas,0,0);
+  wrap.appendChild(canvas);
+
+  if(number===13){
     const overlay=document.createElement('div');
-    overlay.className='page-overlay form-overlay';
+    overlay.id='formOverlay';
+    overlay.className='active';
     const frame=document.createElement('iframe');
+    frame.id='formFrame';
     frame.src=FORM_URL;
     frame.title='Formulir Pengumpulan Dokumen SPJ';
     frame.setAttribute('scrolling','no');
     overlay.appendChild(frame);
-    pageEl.appendChild(overlay);
+    wrap.appendChild(overlay);
   }
-  if(n===18){
-    const overlay=document.createElement('div');
-    overlay.className='page-overlay download-overlay';
-    const a=document.createElement('a');
-    a.href=CHECKLIST_FILE;a.download='Format_Checklist.docx';
-    a.className='download-btn';a.textContent='↓ Download Format Checklist';
-    const b=document.createElement('a');
-    b.href=BUKTI_BERKAS_FILE;b.download='Format_Bukti_Pengumpulan_berkas.docx';
-    b.className='download-btn';b.textContent='↓ Download Format Bukti Pengumpulan Berkas';
-    overlay.append(a,b);
-    pageEl.appendChild(overlay);
+
+  if(number===18){
+    const downloadOverlay=document.createElement('div');
+    downloadOverlay.id='downloadOverlay';
+
+    const checklist=document.createElement('a');
+    checklist.href=CHECKLIST_FILE;
+    checklist.download='Format_Checklist.docx';
+    checklist.className='download-btn';
+    checklist.textContent='↓ Download Format Checklist';
+
+    const bukti=document.createElement('a');
+    bukti.href=BUKTI_BERKAS_FILE;
+    bukti.download='Format_Bukti_Pengumpulan_berkas.docx';
+    bukti.textContent='↓ Download Format Bukti Pengumpulan Berkas';
+    bukti.className='download-btn';
+
+    downloadOverlay.append(checklist,bukti);
+    wrap.appendChild(downloadOverlay);
   }
+
+  return wrap;
 }
 
-async function buildBook(){
+function updateControls(){
+  pageInput.value=currentPage;
+  document.getElementById('prev').disabled=currentPage===1;
+  document.getElementById('next').disabled=currentPage===pdfDoc.numPages;
+  pageStatus.textContent='/ '+pdfDoc.numPages;
+}
+
+async function renderPage(number,direction='next'){
+  if(!pdfDoc) return;
+
+  number=Math.max(1,Math.min(pdfDoc.numPages,number));
+
+  if(rendering){
+    pendingPage={number,direction};
+    return;
+  }
+
+  if(number===currentPage && hasShownFirstPage) return;
+
+  rendering=true;
   loading.classList.add('show');
+
   try{
-    pdfDoc=await pdfjsLib.getDocument({url:PDF_URL}).promise;
-    // Gunakan seluruh area layar untuk buku; toolbar mengambang di atas buku.
-    const viewerW=Math.max(320,viewer.clientWidth);
-    const viewerH=Math.max(360,viewer.clientHeight);
-    const first=await pdfDoc.getPage(1);
-    const base=first.getViewport({scale:1});
-    const mobile=isMobile();
-    // Pertahankan proporsi asli PDF sambil memaksimalkan ukuran buku di layar.
-    const pageW=Math.floor(Math.min(mobile?viewerW:viewerW/2, (viewerH*base.width/base.height)));
-    const pageH=Math.floor(pageW*base.height/base.width);
+    // Halaman tujuan dirender sepenuhnya SEBELUM animasi dimulai.
+    const target=await getRenderedPage(number);
 
-    const shell=document.createElement('div');
-    shell.id='bookShell';
-    const book=document.createElement('div');
-    book.id='flipBook';
-    book.setAttribute('aria-label','Tarik sudut halaman untuk membalik lembaran buku');
-    shell.appendChild(book);
-    viewer.replaceChildren(shell);
+    if(!hasShownFirstPage){
+      currentPage=number;
+      const stage=document.createElement('div');
+      stage.id='pageStage';
+      stage.style.width=target.width+'px';
+      stage.style.height=target.height+'px';
 
-    const pages=[];
-    for(let n=1;n<=pdfDoc.numPages;n++){
-      const page=document.createElement('div');
-      page.className='page';
-      const content=document.createElement('div');
-      content.className='page-content';
-      const canvas=await renderPdfPage(n,pageW);
-      const visible=document.createElement('canvas');
-      visible.width=canvas.width;visible.height=canvas.height;
-      visible.style.width='100%';visible.style.height='100%';
-      visible.getContext('2d',{alpha:false}).drawImage(canvas,0,0);
-      content.appendChild(visible);
-      addOverlay(content,n);
-      page.appendChild(content);
-      pages.push(page);
+      const incoming=document.createElement('div');
+      incoming.className='page-layer incoming';
+      incoming.appendChild(createPageContent(number,target));
+      stage.appendChild(incoming);
+
+      viewer.replaceChildren(stage);
+      hasShownFirstPage=true;
+      updateControls();
+      preloadAround(number);
+      return;
     }
 
-    pageFlip=new St.PageFlip(book,{
-      width:pageW,
-      height:pageH,
-      size:'stretch',
-      minWidth:260,
-      maxWidth:pageW,
-      minHeight:340,
-      maxHeight:pageH,
-      maxShadowOpacity:0.58,
-      showCover:false,
-      mobileScrollSupport:false,
-      // Mengaktifkan kontrol mouse dan sentuhan untuk menarik sudut halaman.
-      usePortrait:mobile,
-      drawShadow:true,
-      flippingTime:1050,
-      startPage:0,
-      autoSize:true,
-      clickEventForward:true,
-      useMouseEvents:true,
-      swipeDistance:24,
-      showPageCorners:true,
-      // Drag halaman dari sudut kanan/kiri atas atau bawah.
-      // StPageFlip mengelola gerakan pointer dan sentuhan secara native.
-     
-      disableFlipByClick:false
-    });
-    // Semua halaman PDF sudah dirender sebelum buku diinisialisasi.
-    // Saat Next/Previous, StPageFlip hanya menganimasikan halaman yang sudah siap;
-    // tidak ada proses render PDF yang menunggu setelah tombol diklik.
-    pageFlip.loadFromHTML(pages);
-    pageFlip.on('flip',e=>{
-      currentPage=e.data+1;
-      pageInput.value=currentPage;
-      const total=pdfDoc.numPages;
-      const visible=pageFlip.getOrientation()==='landscape'
-        ? `${currentPage}–${Math.min(currentPage+1,total)}`
-        : `${currentPage}`;
-      pageStatus.textContent=`${visible} / ${total}`;
-      document.getElementById('prev').disabled=currentPage<=1;
-      document.getElementById('next').disabled=currentPage>=total-1;
-    });
-    currentPage=1;
-    pageInput.value=1;
-    pageInput.max=pdfDoc.numPages;
-    pageStatus.textContent=`1–2 / ${pdfDoc.numPages}`;
-    document.getElementById('prev').disabled=true;
-    document.getElementById('next').disabled=false;
+    // Simpan tampilan halaman lama. Halaman baru ditempatkan di bawahnya
+    // sebelum frame pertama animasi.
+    const oldStage=document.getElementById('pageStage');
+    const oldWrap=oldStage?.querySelector('.incoming .page-content-wrap');
+
+    const stage=document.createElement('div');
+    stage.id='pageStage';
+    stage.className='animating';
+    stage.style.width=target.width+'px';
+    stage.style.height=target.height+'px';
+
+    const incoming=document.createElement('div');
+    incoming.className='page-layer incoming';
+    incoming.appendChild(createPageContent(number,target));
+
+    stage.appendChild(incoming);
+
+    if(oldWrap){
+      const outgoing=document.createElement('div');
+      outgoing.className=`page-layer outgoing ${direction==='prev'?'prev':'next'}`;
+      outgoing.style.width=target.width+'px';
+      outgoing.style.height=target.height+'px';
+      outgoing.appendChild(oldWrap.cloneNode(true));
+      stage.appendChild(outgoing);
+    }
+
+    viewer.replaceChildren(stage);
+
+    // Paksa browser melakukan layout: halaman baru sudah terlihat di bawah
+    // sebelum kelas animasi mulai bekerja.
+    void stage.offsetWidth;
+
+    currentPage=number;
+    updateControls();
+
+    const outgoing=stage.querySelector('.outgoing');
+    if(outgoing){
+      await new Promise(resolve=>{
+        const finish=()=>resolve();
+        outgoing.addEventListener('animationend',finish,{once:true});
+        setTimeout(finish,850);
+      });
+      stage.classList.remove('animating');
+      outgoing.remove();
+    }
+
+    preloadAround(number);
+
   }catch(err){
-    viewer.innerHTML='<div id="message"><strong>E-book belum dapat dimuat.</strong><br>Periksa koneksi internet, file PDF, dan library flipbook.</div>';
+    viewer.innerHTML=
+      '<div id="message">Halaman tidak dapat ditampilkan. Silakan muat ulang e-book.</div>';
     console.error(err);
   }finally{
     loading.classList.remove('show');
+    rendering=false;
+
+    if(pendingPage){
+      const next=pendingPage;
+      pendingPage=null;
+      if(next.number!==currentPage){
+        renderPage(next.number,next.direction);
+      }
+    }
   }
 }
 
-document.getElementById('prev').onclick=()=>pageFlip?.flipPrev();
-document.getElementById('next').onclick=()=>pageFlip?.flipNext();
+
+async function loadPdf(){
+
+  try{
+
+    pdfDoc=await pdfjsLib
+      .getDocument({url:PDF_URL})
+      .promise;
+
+    pageStatus.textContent='/ '+pdfDoc.numPages;
+
+    await renderPage(1,'next');
+
+
+  }catch(error){
+
+    viewer.innerHTML=
+      '<div id="message"><strong>PDF belum dapat dimuat.</strong><br>Pastikan file PDF berada satu folder dengan index.html.</div>';
+
+    console.error(error);
+  }
+}
+
+
+/* NAVIGASI HALAMAN */
+
+document.getElementById('prev').onclick=()=>{
+  renderPage(currentPage-1,'prev');
+};
+
+document.getElementById('next').onclick=()=>{
+  renderPage(currentPage+1,'next');
+};
+
 pageInput.onchange=()=>{
-  const n=Math.max(1,Math.min(pdfDoc?.numPages||1,Number(pageInput.value)||1));
-  pageFlip?.turnToPage(n-1);
+
+  const target=Number(pageInput.value)||1;
+
+  renderPage(
+    target,
+    target<currentPage?'prev':'next'
+  );
 };
+
+
+/* ZOOM */
+
 document.getElementById('zoomIn').onclick=()=>{
-  zoom=Math.min(1.35,zoom+.1);
-  const shell=document.getElementById('bookShell');
-  if(shell) shell.style.transform=`scale(${zoom})`;
+  zoom=Math.min(1.8,zoom+.1);
+  renderPage(currentPage,'next');
 };
+
 document.getElementById('zoomOut').onclick=()=>{
-  zoom=Math.max(.75,zoom-.1);
-  const shell=document.getElementById('bookShell');
-  if(shell) shell.style.transform=`scale(${zoom})`;
+  zoom=Math.max(.55,zoom-.1);
+  renderPage(currentPage,'next');
 };
+
+
+/* FULLSCREEN */
+
 document.getElementById('fullscreen').onclick=()=>{
-  if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();
-  else document.exitFullscreen?.();
+
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen?.();
+  }else{
+    document.exitFullscreen?.();
+  }
 };
-let resizeTimer;
+
+
+/* RESPONSIVE */
+
 window.addEventListener('resize',()=>{
-  clearTimeout(resizeTimer);
-  resizeTimer=setTimeout(()=>location.reload(),350);
+
+  if(pdfDoc){
+    renderPage(currentPage,'next');
+  }
 });
-document.addEventListener('keydown',e=>{
-  if(e.target===pageInput)return;
-  if(e.key==='ArrowRight')pageFlip?.flipNext();
-  if(e.key==='ArrowLeft')pageFlip?.flipPrev();
+
+
+/* NAVIGASI KEYBOARD */
+
+document.addEventListener('keydown',event=>{
+
+  if(event.target===pageInput)return;
+
+  if(event.key==='ArrowRight'){
+    renderPage(currentPage+1,'next');
+  }
+
+  if(event.key==='ArrowLeft'){
+    renderPage(currentPage-1,'prev');
+  }
 });
-buildBook();
+
+
+/* NAVIGASI SWIPE */
+
+let touchStartX=0;
+
+viewer.addEventListener(
+  'touchstart',
+  e=>{
+    touchStartX=e.changedTouches[0].screenX;
+  },
+  {passive:true}
+);
+
+viewer.addEventListener(
+  'touchend',
+  e=>{
+
+    const dx=e.changedTouches[0].screenX-touchStartX;
+
+    if(Math.abs(dx)>65){
+
+      renderPage(
+        currentPage+(dx<0?1:-1),
+        dx<0?'next':'prev'
+      );
+    }
+  },
+  {passive:true}
+);
+
+
+/* MEMUAT EBOOK */
+
+loadPdf();
 
 </script>
 
