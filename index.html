@@ -483,91 +483,54 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
 
 
 
-/* =========================================================
-   INTEGRASI ASSET BOOK FRAME
-   ========================================================= */
-.book-frame-asset{
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:calc(100% + 42px);
-  height:calc(100% + 34px);
-  transform:translate(-50%,-50%);
-  object-fit:contain;
-  object-position:center;
-  pointer-events:none;
-  user-select:none;
-  -webkit-user-drag:none;
-  z-index:1;
-  filter:drop-shadow(0 22px 28px rgba(0,0,0,.34));
-}
-
-/* Flipbook selalu berada di atas asset agar PDF dan animasi tidak tertutup */
-#flipBook{
-  z-index:5 !important;
-}
-
-/* Asset menggantikan dekorasi buku buatan CSS lama */
-#flipBook::before,
-#flipBook::after,
-#bookShell::before,
-#bookShell::after{
-  display:none !important;
-}
-
-/* Pada desktop asset mengikuti proporsi buku dua halaman */
-@media (min-width:701px){
-  .book-frame-asset{
-    width:calc(100% + 56px);
-    height:calc(100% + 42px);
-  }
-}
-
-/* Pada mobile asset tetap tersedia sebagai latar visual,
-   tetapi tidak diperbesar berlebihan. */
-@media (max-width:700px){
-  .book-frame-asset{
-    width:calc(100% + 18px);
-    height:calc(100% + 18px);
-  }
-}
-
 </style>
+
 <style>
 /* =========================================================
-   BOOK FRAME OVERLAY — PROPORSIONAL DENGAN EBOOK
+   BOOK FRAME — DISESUAIKAN DENGAN UKURAN BUKU
    ========================================================= */
+
+/* Shell sekarang mengikuti ukuran flipbook, bukan seluruh viewport */
 #bookShell{
-  position:relative;
+  position:relative !important;
   isolation:isolate;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  width:var(--book-w) !important;
+  height:var(--book-h) !important;
+  flex:0 0 auto !important;
+  margin:0 !important;
+  overflow:visible !important;
 }
 
-/* Flipbook adalah patokan ukuran */
+/* Asset berada tepat di belakang halaman dan mengikuti proporsi buku */
+.book-frame-asset{
+  position:absolute !important;
+  left:50% !important;
+  top:50% !important;
+  width:calc(100% + 46px) !important;
+  height:calc(100% + 46px) !important;
+  transform:translate(-50%,-50%) !important;
+  object-fit:fill !important;
+  object-position:center center !important;
+  pointer-events:none !important;
+  user-select:none !important;
+  -webkit-user-drag:none !important;
+  z-index:1 !important;
+  filter:drop-shadow(0 18px 24px rgba(0,0,0,.38));
+}
+
+/* Flipbook berada di atas area putih asset */
 #flipBook{
-  position:relative;
-  z-index:5 !important;
+  position:absolute !important;
+  left:50% !important;
+  top:50% !important;
+  width:100% !important;
+  height:100% !important;
+  margin:0 !important;
+  transform:translate(-50%,-50%) !important;
+  z-index:2 !important;
 }
 
-/* Overlay mengikuti rasio flipbook.
-   Margin kecil dibuat seragam agar bingkai tidak terlalu besar. */
-.book-frame-overlay{
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:calc(100% + 26px);
-  height:calc(100% + 26px);
-  transform:translate(-50%,-50%);
-  object-fit:fill;
-  pointer-events:none;
-  user-select:none;
-  -webkit-user-drag:none;
-  z-index:20;
-}
-
-/* Hilangkan dekorasi CSS lama agar tidak bertumpuk */
+/* Hilangkan dekorasi CSS lama agar tidak bentrok dengan PNG asset */
 #flipBook::before,
 #flipBook::after,
 #bookShell::before,
@@ -575,22 +538,17 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
   display:none !important;
 }
 
-/* Desktop: sedikit ruang untuk ketebalan halaman */
-@media (min-width:701px){
-  .book-frame-overlay{
-    width:calc(100% + 34px);
-    height:calc(100% + 24px);
-  }
-}
+/* Toolbar selalu di atas buku */
+#toolbar{z-index:50 !important;}
 
-/* Mobile: margin lebih kecil agar area baca tetap maksimal */
 @media (max-width:700px){
-  .book-frame-overlay{
-    width:calc(100% + 14px);
-    height:calc(100% + 14px);
+  .book-frame-asset{
+    width:calc(100% + 24px) !important;
+    height:calc(100% + 24px) !important;
   }
 }
 </style>
+
 </head>
 
 <body class="ebook-physical-book">
@@ -704,9 +662,14 @@ async function buildBook(){
     // Pertahankan proporsi asli PDF sambil memaksimalkan ukuran buku di layar.
     const pageW=Math.floor(Math.min(mobile?viewerW:viewerW/2, (viewerH*base.width/base.height)));
     const pageH=Math.floor(pageW*base.height/base.width);
+    // Ukuran shell mengikuti buku yang sebenarnya agar asset frame dan PDF menyatu.
+    const bookW = mobile ? pageW : pageW * 2;
+    const bookH = pageH;
 
     const shell=document.createElement('div');
     shell.id='bookShell';
+    shell.style.setProperty('--book-w', `${bookW}px`);
+    shell.style.setProperty('--book-h', `${bookH}px`);
     /* Asset visual buku */
     const bookFrame=document.createElement('img');
     bookFrame.src='./assets/book-frame.png';
