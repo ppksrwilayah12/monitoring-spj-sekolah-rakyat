@@ -484,30 +484,71 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
 
 
 /* =========================================================
-   INTEGRASI ASSET BOOK FRAME
+   INTEGRASI ASSET BOOK FRAME — PROPORSI PRESISI
    ========================================================= */
+
+#bookShell{
+  position:relative;
+  isolation:isolate;
+  overflow:visible !important;
+}
+
+/* Asset buku berada sebagai struktur fisik di belakang halaman */
 .book-frame-asset{
   position:absolute;
   left:50%;
   top:50%;
-  width:calc(100% + 42px);
-  height:calc(100% + 34px);
+
+  /* Frame sedikit lebih besar agar sisi, ketebalan dan bawah buku terlihat */
+  width:calc(100% + 72px);
+  height:calc(100% + 58px);
+
   transform:translate(-50%,-50%);
-  object-fit:contain;
+  object-fit:fill;
   object-position:center;
+
   pointer-events:none;
   user-select:none;
   -webkit-user-drag:none;
-  z-index:1;
-  filter:drop-shadow(0 22px 28px rgba(0,0,0,.34));
+
+  z-index:0;
+
+  /* Bayangan buku menyatu dengan asset */
+  filter:drop-shadow(0 22px 30px rgba(0,0,0,.42));
 }
 
-/* Flipbook selalu berada di atas asset agar PDF dan animasi tidak tertutup */
+/* Flipbook berada tepat di atas area halaman putih */
 #flipBook{
-  z-index:5 !important;
+  position:relative;
+  z-index:2 !important;
+
+  /*
+    Halaman sedikit diperkecil dibanding frame.
+    Hasilnya: ketebalan lembar di kiri/kanan tetap terlihat.
+  */
+  width:calc(100% - 34px) !important;
+  height:calc(100% - 26px) !important;
+
+  margin:auto;
+
+  transform:translateY(-1px);
 }
 
-/* Asset menggantikan dekorasi buku buatan CSS lama */
+/* Mesin PageFlip dan seluruh layer animasinya harus tetap berada di depan */
+#flipBook *,
+.stf__parent,
+.stf__block{
+  position:relative;
+  z-index:2;
+}
+
+/* Jangan sampai canvas/page layer menutupi navigasi */
+.controls,
+#controls{
+  z-index:100 !important;
+}
+
+/* Hilangkan dekorasi buku CSS lama agar tidak bertumpuk */
 #flipBook::before,
 #flipBook::after,
 #bookShell::before,
@@ -515,20 +556,47 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helv
   display:none !important;
 }
 
-/* Pada desktop asset mengikuti proporsi buku dua halaman */
+
+/* =========================
+   DESKTOP / LAPTOP
+   ========================= */
 @media (min-width:701px){
+
+  #bookShell{
+    padding:18px 22px 22px;
+    box-sizing:border-box;
+  }
+
   .book-frame-asset{
-    width:calc(100% + 56px);
-    height:calc(100% + 42px);
+    width:calc(100% + 62px);
+    height:calc(100% + 48px);
+  }
+
+  #flipBook{
+    width:calc(100% - 42px) !important;
+    height:calc(100% - 30px) !important;
   }
 }
 
-/* Pada mobile asset tetap tersedia sebagai latar visual,
-   tetapi tidak diperbesar berlebihan. */
+
+/* =========================
+   MOBILE
+   ========================= */
 @media (max-width:700px){
+
+  #bookShell{
+    padding:10px 8px 14px;
+    box-sizing:border-box;
+  }
+
   .book-frame-asset{
-    width:calc(100% + 18px);
-    height:calc(100% + 18px);
+    width:calc(100% + 22px);
+    height:calc(100% + 20px);
+  }
+
+  #flipBook{
+    width:calc(100% - 12px) !important;
+    height:calc(100% - 12px) !important;
   }
 }
 
