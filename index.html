@@ -423,6 +423,41 @@ body {
 ========================= */
 @media(max-width:700px){
 
+  /*
+    MOBILE:
+    - 1 halaman (sudah diatur oleh PageFlip melalui usePortrait)
+    - tanpa frame assets
+    - hanya PDF
+  */
+  #viewer{
+    align-items:center;
+    justify-content:center;
+    background:#ffffff;
+  }
+
+  #bookShell{
+    filter:none !important;
+    overflow:hidden !important;
+    background:#ffffff;
+  }
+
+  #bookShell .book-frame-base,
+  #bookShell .book-frame-overlay{
+    display:none !important;
+  }
+
+  #bookShell .book-clip{
+    position:absolute !important;
+    inset:0 !important;
+    width:100% !important;
+    height:100% !important;
+    overflow:hidden !important;
+  }
+
+  #flipBook{
+    filter:none !important;
+  }
+
   #toolbar{
     max-width:calc(100vw - 16px);
 
@@ -897,7 +932,7 @@ async function buildBook(){
     ========================= */
 
     const reservedToolbar =
-      mobile ? 58 : 68;
+      mobile ? 64 : 68;
 
     const availableW =
       Math.max(
@@ -913,49 +948,86 @@ async function buildBook(){
 
 
     /* =========================
-       HITUNG UKURAN LUAR BUKU
+       HITUNG UKURAN BUKU / PDF
+
+       DESKTOP:
+       tetap menggunakan proporsi dan inset frame assets.
+
+       MOBILE:
+       frame tidak digunakan sehingga area PDF memakai
+       seluruh area yang tersedia.
     ========================= */
 
-    let bookW =
-      Math.min(
-        availableW,
-        availableH * ASSET_RATIO
-      );
+    let bookW;
+    let bookH;
 
-    let bookH =
-      bookW / ASSET_RATIO;
+    let insetLeft;
+    let insetRight;
+    let insetTop;
+    let insetBottom;
 
+    let innerW;
+    let innerH;
 
-    /* =========================
-       AREA DALAM FRAME
+    if(mobile){
 
-       Nilai ini dapat disesuaikan
-       apabila PDF masih terlalu dekat
-       dengan bingkai.
-    ========================= */
+      /*
+        MOBILE = hanya PDF.
+        Tinggi disisakan untuk toolbar.
+      */
 
-    const insetLeft =
-      bookW * 0.042;
+      bookW =
+        availableW;
 
-    const insetRight =
-      bookW * 0.042;
+      bookH =
+        availableH;
 
-    const insetTop =
-      bookH * 0.027;
+      insetLeft = 0;
+      insetRight = 0;
+      insetTop = 0;
+      insetBottom = 0;
 
-    const insetBottom =
-      bookH * 0.035;
+      innerW = bookW;
+      innerH = bookH;
 
+    }else{
 
-    const innerW =
-      bookW -
-      insetLeft -
-      insetRight;
+      bookW =
+        Math.min(
+          availableW,
+          availableH * ASSET_RATIO
+        );
 
-    const innerH =
-      bookH -
-      insetTop -
-      insetBottom;
+      bookH =
+        bookW / ASSET_RATIO;
+
+      /*
+        AREA DALAM FRAME DESKTOP
+      */
+
+      insetLeft =
+        bookW * 0.042;
+
+      insetRight =
+        bookW * 0.042;
+
+      insetTop =
+        bookH * 0.027;
+
+      insetBottom =
+        bookH * 0.035;
+
+      innerW =
+        bookW -
+        insetLeft -
+        insetRight;
+
+      innerH =
+        bookH -
+        insetTop -
+        insetBottom;
+
+    }
 
 
     /* =====================================================
@@ -1067,7 +1139,16 @@ async function buildBook(){
       'true'
     );
 
-    shell.appendChild(bookBase);
+    /*
+      Frame bawah hanya ditampilkan pada desktop.
+      Mobile menampilkan PDF tanpa assets.
+    */
+
+    if(!mobile){
+
+      shell.appendChild(bookBase);
+
+    }
 
 
     /* =====================================================
@@ -1156,7 +1237,15 @@ async function buildBook(){
       'true'
     );
 
-    shell.appendChild(bookOverlay);
+    /*
+      Frame overlay hanya ditampilkan pada desktop.
+    */
+
+    if(!mobile){
+
+      shell.appendChild(bookOverlay);
+
+    }
 
 
     /* =====================================================
