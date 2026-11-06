@@ -68,7 +68,11 @@ body{
 
   transform-origin:center center;
 
-  overflow:visible;
+  /* Batasi semua elemen flip/animasi agar tidak keluar dari area asset buku */
+  overflow:hidden;
+
+  /* Membuat area potong mengikuti bentuk luar buku secara halus */
+  clip-path:inset(0 round 22px);
 }
 
 /* =========================
