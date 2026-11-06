@@ -1,1273 +1,1114 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E-book Interaktif – Pedoman Monitoring SPJ</title>
+
+<style>
+:root {
+  --primary: #245b91;
+  --toolbar-bg: rgba(30, 38, 48, 0.78);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* =========================
+   AREA UTAMA E-BOOK
+========================= */
+
+#viewer {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 12px;
+  perspective: 1800px;
+  background: #ffffff;
+}
+
+#pageStage {
+  position: relative;
+  flex: none;
+  transform-style: preserve-3d;
+  transform-origin: center center;
+}
+
+#pageWrap {
+  position: relative;
+  background: #ffffff;
+  line-height: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  will-change: transform, opacity, filter;
+}
+
+#pdfCanvas {
+  display: block;
+  max-width: none;
+  height: auto;
+}
+
+/* =========================
+   OVERLAY FORMULIR
+========================= */
+
+#formOverlay {
+  display: none;
+  position: absolute;
+  left: 5.7%;
+  top: 10.5%;
+  width: 88.6%;
+  height: 84.5%;
+  z-index: 3;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+#formOverlay.active {
+  display: block;
+}
+
+#formFrame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  display: block;
+  overflow: hidden;
+}
+
+/* =========================
+   TOOLBAR
+========================= */
+
+#toolbar {
+  position: fixed;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 20;
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  />
+  display: flex;
+  align-items: center;
+  gap: 7px;
 
-  <title>E-Book Interaktif – Pedoman Monitoring SPJ Sekolah Rakyat</title>
+  padding: 7px 10px;
 
-  <!-- PDF.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  border-radius: 14px;
+  background: var(--toolbar-bg);
 
-  <style>
-    /* =========================================================
-       RESET
-    ========================================================= */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+  color: #ffffff;
+  line-height: 1;
 
-    html,
-    body {
-      width: 100%;
-      min-height: 100%;
-      overflow-x: hidden;
-    }
+  box-shadow: 0 2px 12px rgba(0,0,0,.20);
+}
 
-    body {
-      min-height: 100vh;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #ffffff;
-      color: #111827;
-    }
+#toolbar button {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #ffffff;
 
-    button {
-      font-family: inherit;
-    }
+  padding: 7px 9px;
 
-    /* =========================================================
-       APP
-    ========================================================= */
+  font-size: 18px;
+  cursor: pointer;
 
-    .app {
-      width: 100%;
-      min-height: 100vh;
+  transition: background .2s ease;
+}
 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+#toolbar button:hover {
+  background: rgba(255,255,255,.15);
+}
 
-      background: #ffffff;
+#toolbar button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
 
-      padding:
-        clamp(10px, 1.5vw, 24px)
-        clamp(8px, 1vw, 20px)
-        clamp(14px, 1.5vw, 24px);
-    }
+#pageNum {
+  width: 44px;
+  padding: 6px 4px;
 
-    /* =========================================================
-       VIEWER WRAPPER
-    ========================================================= */
+  text-align: center;
 
-    .viewer-wrapper {
-      width: min(100%, 1500px);
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 6px;
 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+  background: rgba(255,255,255,.12);
+  color: #ffffff;
 
-      gap: 14px;
-    }
+  outline: none;
+}
 
-    /* =========================================================
-       BOOK STAGE
+#pageStatus {
+  font-size: 12px;
+  white-space: nowrap;
+}
 
-       Rasio mengikuti asset buku horizontal.
-       Area ini adalah batas utama agar tidak ada halaman PDF
-       yang muncul di luar frame.
-    ========================================================= */
+/* =========================
+   PESAN
+========================= */
 
-    .book-stage {
-      position: relative;
+#message {
+  color: #17365d;
+  background: #ffffff;
 
-      width: min(96vw, 1500px);
+  padding: 22px;
 
-      aspect-ratio: 1536 / 993;
+  border-radius: 10px;
 
-      isolation: isolate;
+  max-width: 600px;
 
-      overflow: hidden;
+  font: 14px/1.5 Arial, sans-serif;
+  text-align: center;
 
-      flex-shrink: 0;
-    }
+  box-shadow: 0 4px 20px rgba(0,0,0,.08);
+}
 
-    /* =========================================================
-       PDF CLIP AREA
+/* =========================
+   LOADING
+========================= */
 
-       PDF berada di dalam area ini.
+#loading {
+  position: fixed;
+  inset: 0;
 
-       overflow:hidden memastikan tidak ada bagian halaman
-       yang keluar dari frame buku.
-    ========================================================= */
+  display: none;
+  align-items: center;
+  justify-content: center;
 
-    .pdf-clip {
-      position: absolute;
+  background: rgba(255,255,255,.55);
 
-      /*
-        Area PDF diperbesar mendekati frame.
+  color: #17365d;
 
-        Angka ini dapat disesuaikan sedikit jika asset frame
-        Anda memiliki ketebalan border berbeda.
-      */
+  z-index: 15;
 
-      left: 6.5%;
-      right: 6.5%;
+  font-size: 13px;
+}
 
-      top: 5.7%;
-      bottom: 5.8%;
+#loading.show {
+  display: flex;
+}
 
-      overflow: hidden;
+/* =========================
+   ANIMASI HALAMAN
+========================= */
 
-      z-index: 1;
+@keyframes pageTurnNext {
+  0% {
+    opacity: .35;
+    transform:
+      perspective(1400px)
+      rotateY(-24deg)
+      translateX(52px)
+      scale(.985);
 
-      background: #ffffff;
-    }
+    filter: brightness(.72);
+  }
 
-    /* =========================================================
-       PDF SPREAD
+  45% {
+    opacity: .90;
+    transform:
+      perspective(1400px)
+      rotateY(7deg)
+      translateX(-8px)
+      scale(.995);
 
-       Menampung dua halaman PDF.
-    ========================================================= */
+    filter: brightness(1.08);
+  }
 
-    .pdf-spread {
-      width: 100%;
-      height: 100%;
+  100% {
+    opacity: 1;
 
-      display: flex;
+    transform:
+      perspective(1400px)
+      rotateY(0)
+      translateX(0)
+      scale(1);
 
-      align-items: stretch;
-      justify-content: center;
+    filter: brightness(1);
+  }
+}
 
-      overflow: hidden;
+@keyframes pageTurnPrev {
+  0% {
+    opacity: .35;
 
-      background: #ffffff;
-    }
+    transform:
+      perspective(1400px)
+      rotateY(24deg)
+      translateX(-52px)
+      scale(.985);
 
-    /* =========================================================
-       PDF PAGE
-    ========================================================= */
+    filter: brightness(.72);
+  }
 
-    .pdf-page {
-      position: relative;
+  45% {
+    opacity: .90;
 
-      width: 50%;
-      height: 100%;
+    transform:
+      perspective(1400px)
+      rotateY(-7deg)
+      translateX(8px)
+      scale(.995);
 
-      display: flex;
+    filter: brightness(1.08);
+  }
 
-      align-items: center;
-      justify-content: center;
+  100% {
+    opacity: 1;
 
-      overflow: hidden;
+    transform:
+      perspective(1400px)
+      rotateY(0)
+      translateX(0)
+      scale(1);
 
-      background: #ffffff;
-    }
+    filter: brightness(1);
+  }
+}
 
-    /* =========================================================
-       CANVAS
+#pageWrap.turn-next {
+  animation: pageTurnNext .72s cubic-bezier(.2,.75,.25,1) both;
+}
 
-       Canvas dibuat sedikit overscan agar tepian PDF berada
-       di balik frame dan tidak terlihat celah putih.
-    ========================================================= */
+#pageWrap.turn-prev {
+  animation: pageTurnPrev .72s cubic-bezier(.2,.75,.25,1) both;
+}
 
-    .pdf-page canvas {
-      display: block;
+/* =========================
+   RESPONSIVE MOBILE
+========================= */
 
-      /*
-        Sedikit lebih besar dari container.
-        Bagian berlebih dipotong oleh .pdf-page.
-      */
+@media (max-width: 600px) {
 
-      width: 101%;
-      height: 101%;
+  #viewer {
+    padding: 2px;
+  }
 
-      object-fit: fill;
+  #toolbar {
+    bottom: 6px;
+    gap: 3px;
+    padding: 5px 7px;
+  }
 
-      transform: scale(1.015);
+  #toolbar button {
+    padding: 6px;
+    font-size: 16px;
+  }
 
-      transform-origin: center center;
-    }
+  #pageNum {
+    width: 38px;
+  }
 
-    /* =========================================================
-       BOOK FRAME ASSET
+  #formOverlay {
+    left: 3%;
+    width: 94%;
+    top: 10%;
+    height: 85%;
+  }
+}
 
-       Frame berada paling atas.
-
-       pointer-events:none agar tidak mengganggu interaksi PDF.
-    ========================================================= */
-
-    .book-frame {
-      position: absolute;
-
-      inset: 0;
-
-      width: 100%;
-      height: 100%;
-
-      object-fit: fill;
-
-      z-index: 10;
-
-      pointer-events: none;
-
-      user-select: none;
-    }
-
-    /* =========================================================
-       LOADING
-    ========================================================= */
-
-    .loading {
-      position: absolute;
-
-      inset: 0;
-
-      display: flex;
-
-      align-items: center;
-      justify-content: center;
-
-      z-index: 20;
-
-      background: rgba(255, 255, 255, 0.9);
-
-      transition: opacity 0.3s ease;
-    }
-
-    .loading.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .loading-box {
-      padding: 16px 24px;
-
-      background: #ffffff;
-
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-
-      font-size: 14px;
-      color: #1e3a5f;
-    }
-
-    /* =========================================================
-       ERROR
-    ========================================================= */
-
-    .error-box {
-      display: none;
-
-      position: absolute;
-
-      inset: 0;
-
-      z-index: 30;
-
-      align-items: center;
-      justify-content: center;
-
-      padding: 30px;
-
-      background: rgba(255, 255, 255, 0.96);
-
-      text-align: center;
-    }
-
-    .error-box.active {
-      display: flex;
-    }
-
-    .error-content {
-      max-width: 500px;
-
-      padding: 25px;
-
-      border: 1px solid #fecaca;
-      border-radius: 14px;
-
-      background: #fff1f2;
-
-      color: #991b1b;
-    }
-
-    .error-content h3 {
-      margin-bottom: 10px;
-    }
-
-    .error-content p {
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    /* =========================================================
-       CONTROLS
-    ========================================================= */
-
-    .controls {
-      display: flex;
-
-      align-items: center;
-      justify-content: center;
-
-      gap: 8px;
-
-      padding: 8px 12px;
-
-      border-radius: 999px;
-
-      background: #2f5785;
-
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-
-      user-select: none;
-
-      flex-wrap: nowrap;
-    }
-
-    .control-btn {
-      width: 36px;
-      height: 36px;
-
-      border: none;
-      border-radius: 50%;
-
-      display: flex;
-
-      align-items: center;
-      justify-content: center;
-
-      background: rgba(255, 255, 255, 0.12);
-
-      color: #ffffff;
-
-      font-size: 17px;
-
-      cursor: pointer;
-
-      transition:
-        transform 0.15s ease,
-        background 0.15s ease;
-    }
-
-    .control-btn:hover {
-      background: rgba(255, 255, 255, 0.22);
-      transform: translateY(-1px);
-    }
-
-    .control-btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .page-info {
-      min-width: 105px;
-
-      display: flex;
-
-      align-items: center;
-      justify-content: center;
-
-      gap: 6px;
-
-      color: #ffffff;
-
-      font-size: 14px;
-      font-weight: 600;
-
-      white-space: nowrap;
-    }
-
-    .page-input {
-      width: 42px;
-      height: 30px;
-
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      border-radius: 15px;
-
-      background: rgba(255, 255, 255, 0.08);
-
-      color: #ffffff;
-
-      text-align: center;
-
-      outline: none;
-
-      font-size: 14px;
-    }
-
-    .page-input::-webkit-inner-spin-button,
-    .page-input::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
-    .page-input {
-      appearance: textfield;
-      -moz-appearance: textfield;
-    }
-
-    /* =========================================================
-       MOBILE
-    ========================================================= */
-
-    @media (max-width: 768px) {
-
-      .app {
-        padding: 8px 4px 14px;
-      }
-
-      .viewer-wrapper {
-        gap: 10px;
-      }
-
-      .book-stage {
-        width: 100%;
-      }
-
-      /*
-        Sedikit menyesuaikan area PDF untuk layar kecil.
-      */
-
-      .pdf-clip {
-        left: 6.4%;
-        right: 6.4%;
-
-        top: 5.6%;
-        bottom: 5.7%;
-      }
-
-      .controls {
-        gap: 5px;
-        padding: 7px 9px;
-      }
-
-      .control-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 15px;
-      }
-
-      .page-info {
-        min-width: 88px;
-        font-size: 12px;
-      }
-
-      .page-input {
-        width: 38px;
-        height: 28px;
-      }
-    }
-
-    /* =========================================================
-       SMALL MOBILE
-    ========================================================= */
-
-    @media (max-width: 480px) {
-
-      .pdf-clip {
-        left: 6.2%;
-        right: 6.2%;
-
-        top: 5.4%;
-        bottom: 5.5%;
-      }
-
-      .controls {
-        transform: scale(0.9);
-        transform-origin: center top;
-        margin-bottom: -8px;
-      }
-    }
-  </style>
+@media (prefers-reduced-motion: reduce) {
+  #pageWrap.turn-next,
+  #pageWrap.turn-prev {
+    animation: none;
+  }
+}
+</style>
 </head>
 
 <body>
 
-  <main class="app">
+<!-- AREA E-BOOK -->
+<div id="viewer">
+  <div id="message">
+    <strong>E-book sedang dimuat…</strong>
+  </div>
+</div>
 
-    <div class="viewer-wrapper">
+<!-- LOADING -->
+<div id="loading">
+  Membuka halaman…
+</div>
 
-      <!-- =====================================================
-           BOOK
-      ====================================================== -->
+<!-- NAVIGASI -->
+<div id="toolbar" aria-label="Navigasi e-book">
 
-      <section class="book-stage" id="bookStage">
+  <button
+    id="prev"
+    type="button"
+    title="Halaman sebelumnya"
+    aria-label="Halaman sebelumnya">
+    ‹
+  </button>
 
-        <!-- PDF AREA -->
-        <div class="pdf-clip">
+  <input
+    id="pageNum"
+    type="number"
+    min="1"
+    value="1"
+    aria-label="Nomor halaman">
 
-          <div class="pdf-spread">
+  <span id="pageStatus">/ 31</span>
 
-            <div class="pdf-page" id="pageLeft">
-              <canvas id="canvasLeft"></canvas>
-            </div>
+  <button
+    id="next"
+    type="button"
+    title="Halaman berikutnya"
+    aria-label="Halaman berikutnya">
+    ›
+  </button>
 
-            <div class="pdf-page" id="pageRight">
-              <canvas id="canvasRight"></canvas>
-            </div>
+  <button
+    id="zoomOut"
+    type="button"
+    title="Perkecil"
+    aria-label="Perkecil">
+    −
+  </button>
 
-          </div>
+  <button
+    id="zoomIn"
+    type="button"
+    title="Perbesar"
+    aria-label="Perbesar">
+    +
+  </button>
 
-        </div>
+  <button
+    id="fullscreen"
+    type="button"
+    title="Layar penuh"
+    aria-label="Layar penuh">
+    ⛶
+  </button>
 
+</div>
 
-        <!-- FRAME ASSET -->
 
-        <!--
-          GANTI src DI BAWAH DENGAN NAMA FILE ASSET BUKU ANDA
-        -->
+<!-- PDF.JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-        <img
-          src="assets/book-frame.png"
-          alt=""
-          class="book-frame"
-          id="bookFrame"
-        />
+<script>
 
+/* =========================================
+   KONFIGURASI FILE
+========================================= */
 
-        <!-- LOADING -->
+/* NAMA PDF DI ROOT REPOSITORY GITHUB */
+const PDF_URL = "./Draft_Ebook_Rima_Lea_optimized.pdf";
 
-        <div class="loading" id="loading">
+/* FORM APPS SCRIPT */
+const FORM_URL =
+  "https://script.google.com/macros/s/AKfycbxxH0INi4GhjBhajRp4xscS26XTfobPA5lSQGOSveVPA6C1HVgymUhTiVkGZdguax5R/exec";
 
-          <div class="loading-box">
-            E-book sedang dimuat...
-          </div>
 
-        </div>
+/* =========================================
+   PDF.JS
+========================================= */
 
+const pdfjsLib = window.pdfjsLib;
 
-        <!-- ERROR -->
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-        <div class="error-box" id="errorBox">
 
-          <div class="error-content">
+/* =========================================
+   VARIABEL UTAMA
+========================================= */
 
-            <h3>E-book tidak dapat dimuat</h3>
+let pdfDoc = null;
 
-            <p id="errorMessage">
-              Terjadi kesalahan saat memuat file PDF.
-            </p>
+let currentPage = 1;
 
-          </div>
+let zoom = 1;
 
-        </div>
+let rendering = false;
 
-      </section>
+let pendingPage = null;
 
+let hasShownFirstPage = false;
 
-      <!-- =====================================================
-           CONTROLS
-      ====================================================== -->
 
-      <nav class="controls">
+/* =========================================
+   ELEMENT
+========================================= */
 
-        <button
-          class="control-btn"
-          id="prevBtn"
-          title="Halaman sebelumnya"
-          aria-label="Halaman sebelumnya"
-        >
-          ‹
-        </button>
+const viewer = document.getElementById("viewer");
 
+const pageInput = document.getElementById("pageNum");
 
-        <div class="page-info">
+const pageStatus = document.getElementById("pageStatus");
 
-          <input
-            type="number"
-            id="pageInput"
-            class="page-input"
-            value="1"
-            min="1"
-          />
+const loading = document.getElementById("loading");
 
-          <span id="pageRange">
-            / 0
-          </span>
+const prevButton = document.getElementById("prev");
 
-        </div>
+const nextButton = document.getElementById("next");
 
 
-        <button
-          class="control-btn"
-          id="nextBtn"
-          title="Halaman berikutnya"
-          aria-label="Halaman berikutnya"
-        >
-          ›
-        </button>
+/* =========================================
+   MENGHITUNG UKURAN PDF
+========================================= */
 
+function getScale(page) {
 
-        <button
-          class="control-btn"
-          id="zoomOutBtn"
-          title="Perkecil tampilan"
-          aria-label="Perkecil tampilan"
-        >
-          −
-        </button>
+  const unit = page.getViewport({
+    scale: 1
+  });
 
+  /* Ruang tersedia */
 
-        <button
-          class="control-btn"
-          id="zoomInBtn"
-          title="Perbesar tampilan"
-          aria-label="Perbesar tampilan"
-        >
-          +
-        </button>
+  const availableWidth =
+    Math.max(240, window.innerWidth - 24);
 
+  /* Beri ruang toolbar */
 
-        <button
-          class="control-btn"
-          id="fullscreenBtn"
-          title="Layar penuh"
-          aria-label="Layar penuh"
-        >
-          ⛶
-        </button>
+  const availableHeight =
+    Math.max(320, window.innerHeight - 85);
 
-      </nav>
+  /* PDF selalu menyesuaikan layar
+     tanpa melebihi batas */
 
-    </div>
+  return Math.min(
+    availableWidth / unit.width,
+    availableHeight / unit.height
+  ) * zoom;
+}
 
-  </main>
 
+/* =========================================
+   RENDER HALAMAN
+========================================= */
 
-  <script>
+async function renderPage(number, direction = "next") {
 
-    /* =========================================================
-       KONFIGURASI
-    ========================================================= */
+  if (!pdfDoc) return;
 
-    /*
-      GANTI DENGAN NAMA FILE PDF DI REPOSITORY ANDA.
 
-      Contoh:
-      const PDF_URL = "ebook.pdf";
+  /* Jika masih rendering,
+     simpan halaman berikutnya */
 
-      atau:
-      const PDF_URL = "assets/ebook.pdf";
-    */
+  if (rendering) {
 
-    const PDF_URL = "ebook.pdf";
+    pendingPage = {
+      number,
+      direction
+    };
 
+    return;
+  }
 
-    /* =========================================================
-       PDF.JS CONFIG
-    ========================================================= */
 
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  rendering = true;
 
 
-    /* =========================================================
-       ELEMENTS
-    ========================================================= */
+  /* Batasi nomor halaman */
 
-    const loading = document.getElementById("loading");
-    const errorBox = document.getElementById("errorBox");
-    const errorMessage = document.getElementById("errorMessage");
+  currentPage = Math.max(
+    1,
+    Math.min(pdfDoc.numPages, number)
+  );
 
-    const canvasLeft = document.getElementById("canvasLeft");
-    const canvasRight = document.getElementById("canvasRight");
 
-    const pageLeft = document.getElementById("pageLeft");
-    const pageRight = document.getElementById("pageRight");
+  pageInput.value = currentPage;
 
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
 
-    const pageInput = document.getElementById("pageInput");
-    const pageRange = document.getElementById("pageRange");
+  loading.classList.add("show");
 
-    const zoomInBtn = document.getElementById("zoomInBtn");
-    const zoomOutBtn = document.getElementById("zoomOutBtn");
 
-    const fullscreenBtn = document.getElementById("fullscreenBtn");
+  try {
 
-    const bookStage = document.getElementById("bookStage");
+    const page =
+      await pdfDoc.getPage(currentPage);
 
 
-    /* =========================================================
-       STATE
-    ========================================================= */
+    const scale =
+      getScale(page);
 
-    let pdfDoc = null;
 
-    let currentPage = 1;
+    const viewport =
+      page.getViewport({
+        scale
+      });
 
-    let totalPages = 0;
 
-    let zoomLevel = 1;
+    /* STAGE */
 
-    let rendering = false;
+    const stage =
+      document.createElement("div");
 
-    let pendingRender = false;
+    stage.id = "pageStage";
 
+    stage.style.width =
+      viewport.width + "px";
 
-    /* =========================================================
-       LOAD PDF
-    ========================================================= */
+    stage.style.height =
+      viewport.height + "px";
 
-    async function loadPDF() {
 
-      try {
+    /* WRAPPER */
 
-        loading.classList.remove("hidden");
+    const wrap =
+      document.createElement("div");
 
-        const loadingTask = pdfjsLib.getDocument(PDF_URL);
+    wrap.id = "pageWrap";
 
-        pdfDoc = await loadingTask.promise;
+    wrap.style.width =
+      viewport.width + "px";
 
-        totalPages = pdfDoc.numPages;
+    wrap.style.height =
+      viewport.height + "px";
 
-        pageInput.max = totalPages;
 
-        pageRange.textContent = `/ ${totalPages}`;
+    /* CANVAS */
 
-        currentPage = 1;
+    const canvas =
+      document.createElement("canvas");
 
-        await renderSpread();
+    canvas.id = "pdfCanvas";
 
-        loading.classList.add("hidden");
 
-      } catch (error) {
-
-        console.error("PDF Load Error:", error);
-
-        loading.classList.add("hidden");
-
-        errorBox.classList.add("active");
-
-        errorMessage.textContent =
-          "File PDF tidak dapat dimuat. Pastikan nama dan lokasi file PDF sudah benar.";
-
-      }
-
-    }
-
-
-    /* =========================================================
-       RENDER HALAMAN
-    ========================================================= */
-
-    async function renderPage(
-      pageNumber,
-      canvas,
-      container
-    ) {
-
-      if (
-        !pdfDoc ||
-        pageNumber < 1 ||
-        pageNumber > totalPages
-      ) {
-
-        canvas.width = 1;
-        canvas.height = 1;
-
-        canvas.style.display = "none";
-
-        return;
-
-      }
-
-
-      canvas.style.display = "block";
-
-
-      const page = await pdfDoc.getPage(pageNumber);
-
-
-      /*
-        Ambil viewport asli.
-      */
-
-      const baseViewport =
-        page.getViewport({ scale: 1 });
-
-
-      /*
-        Ukuran container.
-      */
-
-      const containerWidth =
-        container.clientWidth;
-
-      const containerHeight =
-        container.clientHeight;
-
-
-      /*
-        Scale berdasarkan ukuran halaman
-        dan container.
-
-        Math.max digunakan agar halaman
-        memenuhi area dan tidak menyisakan
-        ruang kosong.
-      */
-
-      const scaleX =
-        containerWidth / baseViewport.width;
-
-      const scaleY =
-        containerHeight / baseViewport.height;
-
-
-      /*
-        Menggunakan MAX agar PDF memenuhi
-        area.
-
-        Zoom tambahan tetap dibatasi.
-      */
-
-      const scale =
-        Math.max(scaleX, scaleY)
-        * zoomLevel;
-
-
-      const viewport =
-        page.getViewport({
-          scale: scale
-        });
-
-
-      /*
-        Device pixel ratio untuk tampilan tajam.
-      */
-
-      const outputScale =
-        window.devicePixelRatio || 1;
-
-
-      canvas.width =
-        Math.floor(
-          viewport.width * outputScale
-        );
-
-      canvas.height =
-        Math.floor(
-          viewport.height * outputScale
-        );
-
-
-      canvas.style.width =
-        `${viewport.width}px`;
-
-      canvas.style.height =
-        `${viewport.height}px`;
-
-
-      /*
-        Posisi canvas di tengah.
-      */
-
-      const offsetX =
-        (containerWidth - viewport.width) / 2;
-
-      const offsetY =
-        (containerHeight - viewport.height) / 2;
-
-
-      canvas.style.position = "absolute";
-
-      canvas.style.left =
-        `${offsetX}px`;
-
-      canvas.style.top =
-        `${offsetY}px`;
-
-
-      const context =
-        canvas.getContext("2d", {
-          alpha: false
-        });
-
-
-      context.setTransform(
-        outputScale,
-        0,
-        0,
-        outputScale,
-        0,
-        0
+    const ratio =
+      Math.min(
+        window.devicePixelRatio || 1,
+        2
       );
 
 
-      await page.render({
+    canvas.width =
+      Math.ceil(
+        viewport.width * ratio
+      );
 
-        canvasContext: context,
 
-        viewport: viewport,
+    canvas.height =
+      Math.ceil(
+        viewport.height * ratio
+      );
 
-        transform: [
-          outputScale,
-          0,
-          0,
-          outputScale,
-          0,
-          0
-        ]
 
-      }).promise;
+    canvas.style.width =
+      viewport.width + "px";
+
+
+    canvas.style.height =
+      viewport.height + "px";
+
+
+    wrap.appendChild(canvas);
+
+
+    /* =====================================
+       FORM OVERLAY HALAMAN 13
+    ===================================== */
+
+    if (currentPage === 13) {
+
+      const overlay =
+        document.createElement("div");
+
+      overlay.id = "formOverlay";
+
+      overlay.className = "active";
+
+
+      const frame =
+        document.createElement("iframe");
+
+      frame.id = "formFrame";
+
+      frame.src = FORM_URL;
+
+      frame.title =
+        "Formulir Pengumpulan Dokumen SPJ";
+
+      frame.setAttribute(
+        "scrolling",
+        "no"
+      );
+
+
+      overlay.appendChild(frame);
+
+      wrap.appendChild(overlay);
+    }
+
+
+    /* Masukkan ke stage */
+
+    stage.appendChild(wrap);
+
+
+    /* Hapus halaman lama */
+
+    viewer.replaceChildren(stage);
+
+
+    /* Render PDF */
+
+    const context =
+      canvas.getContext("2d");
+
+
+    await page.render({
+
+      canvasContext: context,
+
+      viewport: viewport,
+
+      transform:
+
+        ratio !== 1
+
+          ? [ratio, 0, 0, ratio, 0, 0]
+
+          : null
+
+    }).promise;
+
+
+    /* Animasi */
+
+    if (hasShownFirstPage) {
+
+      wrap.classList.add(
+
+        direction === "prev"
+
+          ? "turn-prev"
+
+          : "turn-next"
+
+      );
 
     }
 
 
-    /* =========================================================
-       RENDER SPREAD
-    ========================================================= */
-
-    async function renderSpread() {
-
-      if (!pdfDoc) {
-        return;
-      }
+    hasShownFirstPage = true;
 
 
-      if (rendering) {
+    /* Status tombol */
 
-        pendingRender = true;
-
-        return;
-
-      }
+    prevButton.disabled =
+      currentPage === 1;
 
 
-      rendering = true;
+    nextButton.disabled =
+      currentPage === pdfDoc.numPages;
 
 
-      try {
-
-        /*
-          Halaman kiri.
-        */
-
-        const leftPageNumber =
-          currentPage;
+    pageStatus.textContent =
+      "/ " + pdfDoc.numPages;
 
 
-        /*
-          Halaman kanan.
-        */
+  }
 
-        const rightPageNumber =
-          currentPage + 1;
+  catch (error) {
+
+    viewer.innerHTML = `
+
+      <div id="message">
+
+        <strong>
+          Halaman tidak dapat ditampilkan.
+        </strong>
+
+        <br>
+
+        Silakan muat ulang e-book.
+
+      </div>
+
+    `;
 
 
-        await Promise.all([
+    console.error(error);
+
+  }
+
+  finally {
+
+    loading.classList.remove("show");
+
+    rendering = false;
+
+
+    /* Render permintaan berikutnya */
+
+    if (pendingPage) {
+
+      const next =
+        pendingPage;
+
+      pendingPage = null;
+
+
+      renderPage(
+        next.number,
+        next.direction
+      );
+
+    }
+
+  }
+
+}
+
+
+/* =========================================
+   MEMUAT PDF
+========================================= */
+
+async function loadPdf() {
+
+  try {
+
+    pdfDoc =
+      await pdfjsLib
+        .getDocument({
+          url: PDF_URL
+        })
+        .promise;
+
+
+    pageStatus.textContent =
+      "/ " + pdfDoc.numPages;
+
+
+    await renderPage(
+      1,
+      "next"
+    );
+
+  }
+
+  catch (error) {
+
+    viewer.innerHTML = `
+
+      <div id="message">
+
+        <strong>
+          E-book tidak dapat dimuat
+        </strong>
+
+        <br><br>
+
+        File PDF tidak dapat dimuat.
+
+        <br>
+
+        Pastikan file:
+
+        <br><br>
+
+        <b>
+          Draft_Ebook_Rima_Lea_optimized.pdf
+        </b>
+
+        <br><br>
+
+        berada di folder utama
+        yang sama dengan
+        <b>index.html</b>.
+
+      </div>
+
+    `;
+
+
+    console.error(error);
+
+  }
+
+}
+
+
+/* =========================================
+   NAVIGASI
+========================================= */
+
+prevButton.onclick = () => {
+
+  renderPage(
+    currentPage - 1,
+    "prev"
+  );
+
+};
+
+
+nextButton.onclick = () => {
+
+  renderPage(
+    currentPage + 1,
+    "next"
+  );
+
+};
+
+
+/* INPUT NOMOR HALAMAN */
+
+pageInput.onchange = () => {
+
+  const selectedPage =
+    Number(pageInput.value) || 1;
+
+
+  renderPage(
+
+    selectedPage,
+
+    selectedPage < currentPage
+
+      ? "prev"
+
+      : "next"
+
+  );
+
+};
+
+
+/* =========================================
+   ZOOM
+========================================= */
+
+document.getElementById("zoomIn").onclick = () => {
+
+  zoom =
+    Math.min(
+      1.8,
+      zoom + 0.1
+    );
+
+
+  renderPage(
+    currentPage,
+    "next"
+  );
+
+};
+
+
+document.getElementById("zoomOut").onclick = () => {
+
+  zoom =
+    Math.max(
+      0.55,
+      zoom - 0.1
+    );
+
+
+  renderPage(
+    currentPage,
+    "next"
+  );
+
+};
+
+
+/* =========================================
+   FULLSCREEN
+========================================= */
+
+document.getElementById("fullscreen").onclick = () => {
+
+  if (!document.fullscreenElement) {
+
+    document.documentElement
+      .requestFullscreen?.();
+
+  }
+
+  else {
+
+    document.exitFullscreen?.();
+
+  }
+
+};
+
+
+/* =========================================
+   RESPONSIVE RESIZE
+========================================= */
+
+let resizeTimer;
+
+window.addEventListener(
+  "resize",
+
+  () => {
+
+    clearTimeout(resizeTimer);
+
+    resizeTimer =
+      setTimeout(() => {
+
+        if (pdfDoc) {
 
           renderPage(
-            leftPageNumber,
-            canvasLeft,
-            pageLeft
-          ),
+            currentPage,
+            "next"
+          );
 
-          renderPage(
-            rightPageNumber,
-            canvasRight,
-            pageRight
-          )
+        }
 
-        ]);
+      }, 200);
 
+  }
 
-        pageInput.value =
-          currentPage;
+);
 
 
-        updateControls();
+/* =========================================
+   KEYBOARD
+========================================= */
+
+document.addEventListener(
+  "keydown",
+
+  event => {
+
+    if (
+      event.target === pageInput
+    ) return;
 
 
-      } catch (error) {
+    if (
+      event.key === "ArrowRight"
+    ) {
 
-        console.error(
-          "Render Error:",
-          error
+      renderPage(
+        currentPage + 1,
+        "next"
+      );
+
+    }
+
+
+    if (
+      event.key === "ArrowLeft"
+    ) {
+
+      renderPage(
+        currentPage - 1,
+        "prev"
+      );
+
+    }
+
+  }
+
+);
+
+
+/* =========================================
+   SWIPE MOBILE
+========================================= */
+
+let touchStartX = 0;
+
+
+viewer.addEventListener(
+
+  "touchstart",
+
+  event => {
+
+    touchStartX =
+      event.changedTouches[0].screenX;
+
+  },
+
+  {
+    passive: true
+  }
+
+);
+
+
+viewer.addEventListener(
+
+  "touchend",
+
+  event => {
+
+    const distance =
+
+      event.changedTouches[0].screenX
+
+      -
+
+      touchStartX;
+
+
+    if (
+      Math.abs(distance) > 65
+    ) {
+
+      if (distance < 0) {
+
+        renderPage(
+          currentPage + 1,
+          "next"
         );
 
-      } finally {
+      }
 
-        rendering = false;
+      else {
 
-
-        if (pendingRender) {
-
-          pendingRender = false;
-
-          renderSpread();
-
-        }
+        renderPage(
+          currentPage - 1,
+          "prev"
+        );
 
       }
 
     }
 
+  },
 
-    /* =========================================================
-       UPDATE CONTROLS
-    ========================================================= */
+  {
+    passive: true
+  }
 
-    function updateControls() {
+);
 
-      prevBtn.disabled =
-        currentPage <= 1;
 
+/* =========================================
+   MULAI
+========================================= */
 
-      nextBtn.disabled =
-        currentPage + 2 > totalPages;
+loadPdf();
 
-    }
-
-
-    /* =========================================================
-       NEXT PAGE
-    ========================================================= */
-
-    nextBtn.addEventListener(
-      "click",
-      () => {
-
-        if (
-          currentPage + 2 <= totalPages
-        ) {
-
-          currentPage += 2;
-
-          renderSpread();
-
-        }
-
-      }
-    );
-
-
-    /* =========================================================
-       PREVIOUS PAGE
-    ========================================================= */
-
-    prevBtn.addEventListener(
-      "click",
-      () => {
-
-        if (
-          currentPage - 2 >= 1
-        ) {
-
-          currentPage -= 2;
-
-          renderSpread();
-
-        }
-
-      }
-    );
-
-
-    /* =========================================================
-       PAGE INPUT
-    ========================================================= */
-
-    pageInput.addEventListener(
-      "change",
-      () => {
-
-        let value =
-          parseInt(pageInput.value, 10);
-
-
-        if (
-          Number.isNaN(value)
-        ) {
-
-          value = 1;
-
-        }
-
-
-        value =
-          Math.max(
-            1,
-            Math.min(
-              value,
-              totalPages
-            )
-          );
-
-
-        /*
-          Pastikan halaman dimulai dari
-          pasangan spread ganjil.
-        */
-
-        if (value % 2 === 0) {
-
-          value -= 1;
-
-        }
-
-
-        currentPage = value;
-
-        renderSpread();
-
-      }
-    );
-
-
-    /* =========================================================
-       ZOOM IN
-    ========================================================= */
-
-    zoomInBtn.addEventListener(
-      "click",
-      () => {
-
-        zoomLevel =
-          Math.min(
-            zoomLevel + 0.05,
-            1.25
-          );
-
-        renderSpread();
-
-      }
-    );
-
-
-    /* =========================================================
-       ZOOM OUT
-    ========================================================= */
-
-    zoomOutBtn.addEventListener(
-      "click",
-      () => {
-
-        zoomLevel =
-          Math.max(
-            zoomLevel - 0.05,
-            0.90
-          );
-
-        renderSpread();
-
-      }
-    );
-
-
-    /* =========================================================
-       FULLSCREEN
-    ========================================================= */
-
-    fullscreenBtn.addEventListener(
-      "click",
-      async () => {
-
-        try {
-
-          if (
-            !document.fullscreenElement
-          ) {
-
-            await bookStage.requestFullscreen();
-
-          } else {
-
-            await document.exitFullscreen();
-
-          }
-
-        } catch (error) {
-
-          console.error(
-            "Fullscreen Error:",
-            error
-          );
-
-        }
-
-      }
-    );
-
-
-    /* =========================================================
-       RESIZE
-
-       Debounce agar PDF tidak dirender berulang-ulang
-       ketika ukuran browser berubah.
-    ========================================================= */
-
-    let resizeTimer = null;
-
-
-    window.addEventListener(
-      "resize",
-      () => {
-
-        clearTimeout(resizeTimer);
-
-        resizeTimer =
-          setTimeout(
-            () => {
-
-              renderSpread();
-
-            },
-            250
-          );
-
-      }
-    );
-
-
-    /* =========================================================
-       KEYBOARD NAVIGATION
-    ========================================================= */
-
-    window.addEventListener(
-      "keydown",
-      event => {
-
-        if (
-          event.key === "ArrowRight"
-        ) {
-
-          nextBtn.click();
-
-        }
-
-
-        if (
-          event.key === "ArrowLeft"
-        ) {
-
-          prevBtn.click();
-
-        }
-
-      }
-    );
-
-
-    /* =========================================================
-       START
-    ========================================================= */
-
-    loadPDF();
-
-  </script>
+</script>
 
 </body>
 </html>
